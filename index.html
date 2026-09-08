@@ -1,6 +1,5 @@
 <meta charset="utf-8">
 <title>Тендерный бюджет</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 :root{
   --ground:#E8ECEE; --surface:#FFFFFF; --surface-2:#F3F5F7; --sunken:#F0F2F4;
@@ -59,29 +58,17 @@ button{font:inherit;color:inherit}
 .proto{margin-left:auto;display:flex;gap:10px;align-items:center}
 .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
   padding:3px 7px;background:var(--sunken);color:var(--muted);border-radius:3px}
+.verline{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;
+  padding:0 24px 9px;background:var(--surface);font-size:11.5px;color:var(--faint)}
+.verline a{color:var(--muted)}
 
-/* ---------- хлебные крошки и переключатель объекта ---------- */
-.crumbs{display:flex;align-items:center;gap:8px;min-width:0}
+/* ---------- хлебные крошки и переключатель блока ---------- */
+.crumbs{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
 .crumb{background:none;border:0;padding:3px 6px;margin-left:-6px;border-radius:4px;cursor:pointer;
   font-size:13px;color:var(--muted)}
 .crumb:hover{background:var(--sunken);color:var(--ink)}
 .sep{color:var(--line-strong);font-size:13px}
 .crumb-cur{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap}
-.variant{display:flex;align-items:center;gap:6px;background:var(--sunken);border:0;cursor:pointer;
-  padding:4px 8px;border-radius:4px;font-family:var(--mono);font-size:12px;color:var(--text)}
-.variant:hover{background:var(--line)}
-.variant i{font-style:normal;font-size:9px;color:var(--faint)}
-.pop-wrap{position:relative}
-.pop{position:absolute;top:calc(100% + 6px);left:0;z-index:30;width:290px;
-  background:var(--surface);border-radius:8px;box-shadow:var(--shadow);padding:6px;
-  border:1px solid var(--line)}
-.pop-head{padding:6px 8px 7px;font-family:var(--mono);font-size:10px;letter-spacing:.09em;
-  text-transform:uppercase;color:var(--faint)}
-.pop-item{display:flex;justify-content:space-between;align-items:baseline;gap:10px;width:100%;
-  background:none;border:0;text-align:left;padding:7px 8px;border-radius:5px;cursor:pointer;font-size:12.5px}
-.pop-item:hover{background:var(--sunken)}
-.pop-item[aria-current="true"]{background:var(--sunken);font-weight:600;color:var(--ink)}
-.pop-item span{font-family:var(--mono);font-size:11px;color:var(--faint);font-weight:400;white-space:nowrap}
 
 /* ---------- строка фактов объекта ---------- */
 .objbar{display:flex;gap:18px;flex-wrap:wrap;align-items:baseline;
@@ -116,8 +103,8 @@ tr.obj-row[aria-current="true"] td:first-child{box-shadow:inset 2px 0 0 var(--in
 .swatch{width:9px;height:9px;border-radius:50%;flex:none}
 
 .tr-wrap{overflow-x:auto}
-.tr{position:relative;min-width:1020px;padding-bottom:16px}
-.track{position:absolute;left:5%;right:5%;top:15px;height:2px;background:var(--line-strong);border-radius:1px}
+.tr{position:relative;min-width:900px;padding-bottom:16px}
+.track{position:absolute;left:6.25%;right:6.25%;top:15px;height:2px;background:var(--line-strong);border-radius:1px}
 .track .fill{position:absolute;left:0;top:0;height:100%;background:var(--ink);border-radius:1px;
   transition:width .28s cubic-bezier(.4,0,.2,1)}
 .tsteps{list-style:none;margin:0;padding:0;display:flex;position:relative}
@@ -150,19 +137,32 @@ tr.obj-row[aria-current="true"] td:first-child{box-shadow:inset 2px 0 0 var(--in
   padding-bottom:14px;margin-bottom:20px;border-bottom:1px solid var(--line)}
 .stage-title{font-size:22px;letter-spacing:-.015em}
 .stage-sub{font-size:13px;color:var(--muted);max-width:62ch;margin-top:5px}
-.stage-actions{display:flex;gap:8px}
+.stage-actions{display:flex;gap:8px;flex-wrap:wrap}
 .btn{padding:7px 13px;border-radius:4px;border:1px solid var(--line-strong);background:var(--surface);
   cursor:pointer;font-size:12.5px;font-weight:500;white-space:nowrap}
 .btn:hover{border-color:var(--faint)}
 .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--ground)}
 .btn-primary:hover{opacity:.88}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn-sm{padding:3px 9px;font-size:11.5px}
 
 .panel{background:var(--surface);border-radius:8px;margin-bottom:14px}
+.panel.sect{border:1px solid var(--line-strong)}
 .panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
   padding:11px 14px;border-bottom:1px solid var(--line)}
 .panel-body{padding:14px}
 .panel-body.tight{padding:0}
+.sect-mark{font-family:var(--mono);font-size:10.5px;color:var(--surface);background:var(--ramp-2);
+  border-radius:3px;padding:1px 6px;margin-right:8px}
+
+details.fold{background:var(--surface);border-radius:8px;margin-bottom:14px}
+details.fold>summary{list-style:none;cursor:pointer;padding:11px 14px;
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-bottom:1px solid transparent}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold[open]>summary{border-bottom-color:var(--line)}
+details.fold>summary::after{content:"развернуть";font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+details.fold[open]>summary::after{content:"свернуть"}
+details.fold .fold-body{padding:14px}
 
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
 .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:1px;background:var(--line)}
@@ -180,6 +180,8 @@ tbody tr:hover{background:var(--surface-2)}
 .r{text-align:right}
 td.art{font-family:var(--mono);font-size:11.5px;color:var(--text);white-space:nowrap}
 tfoot td{border-top:1px solid var(--line-strong);border-bottom:0;font-weight:600;color:var(--ink);padding-top:10px}
+tr.sub td{color:var(--muted);background:var(--sunken)}
+tr.sub td:first-child{padding-left:26px}
 
 .pill{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border-radius:3px;
   font-size:11px;font-weight:500;white-space:nowrap;border:1px solid transparent}
@@ -190,6 +192,19 @@ tfoot td{border-top:1px solid var(--line-strong);border-bottom:0;font-weight:600
 .p-missing{color:var(--p-missing);background:var(--p-missing-bg);border-color:var(--p-missing-line)}
 .pill.plain::before{display:none}
 
+/* карантин: рамка поверх прежнего фона, фон не меняется */
+.pill.quar{border:2px solid var(--p-missing);border-radius:4px}
+.quar-addr{display:block;font-family:var(--mono);font-size:10px;color:var(--p-missing);margin-top:3px;white-space:nowrap}
+
+/* добивочные строки: серые, не зелёные */
+.pill.bal{color:var(--muted);background:var(--sunken);border-color:var(--line-strong)}
+.bal-note{display:block;font-size:10.5px;color:var(--faint);margin-top:2px}
+
+/* условные числа */
+.cond{border-bottom:1px dashed var(--p-manual);cursor:help}
+.cond-mark{font-family:var(--mono);font-size:9.5px;color:var(--p-manual);
+  text-transform:uppercase;letter-spacing:.06em;margin-left:5px}
+
 .kv{display:grid;gap:0}
 .kv div{display:flex;justify-content:space-between;gap:16px;padding:7px 0;border-bottom:1px solid var(--line)}
 .kv div:last-child{border-bottom:0}
@@ -197,10 +212,17 @@ tfoot td{border-top:1px solid var(--line-strong);border-bottom:0;font-weight:600
 .kv .v{font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:12.5px;font-weight:500;color:var(--ink)}
 
 .field{display:flex;align-items:center;gap:8px}
-input[type=text],input[type=number]{font:inherit;font-variant-numeric:tabular-nums;text-align:right;
+input[type=text],input[type=number],select{font:inherit;font-variant-numeric:tabular-nums;text-align:right;
   width:100%;max-width:130px;padding:5px 8px;border-radius:4px;background:var(--p-manual-bg);
   border:1px solid var(--p-manual-line);color:var(--ink)}
-input[type=text]:focus,input[type=number]:focus{outline:2px solid var(--p-manual);outline-offset:1px}
+select{text-align:left}
+input[type=text]:focus,input[type=number]:focus,select:focus{outline:2px solid var(--p-manual);outline-offset:1px}
+input.auto-in,select.auto-in{background:var(--surface);border-color:var(--line-strong);color:var(--muted)}
+input.wide{max-width:none}
+.req-star{color:var(--p-missing);margin-left:2px}
+.field-lbl{font-size:11.5px;color:var(--muted);margin-bottom:4px}
+.field-note{font-size:11px;color:var(--faint);margin-top:4px}
+
 .chk{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer}
 .chk:last-child{border-bottom:0}
 .chk input{margin:3px 0 0;accent-color:var(--ink);width:14px;height:14px;flex:none}
@@ -215,6 +237,7 @@ input[type=text]:focus,input[type=number]:focus{outline:2px solid var(--p-manual
   border-right:1px solid var(--line)}
 .seg button:last-child{border-right:0}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--ground);font-weight:500}
+.seg.sm button{padding:4px 9px;font-size:11.5px}
 
 .stagebar{display:flex;height:26px;border-radius:4px;overflow:hidden}
 .stagebar span{display:grid;place-items:center;font-family:var(--mono);font-size:10.5px;color:var(--surface);
@@ -224,12 +247,25 @@ input[type=text]:focus,input[type=number]:focus{outline:2px solid var(--p-manual
 .note{font-size:12px;color:var(--muted);padding:10px 14px;background:var(--sunken);
   border-left:2px solid var(--line-strong);border-radius:0 4px 4px 0;margin-top:4px}
 .note b{color:var(--text);font-weight:500}
+.note+.note{margin-top:8px}
+.note.hands{border-left-color:var(--p-manual)}
+.note.what{border-left-color:var(--p-tender)}
+
+.drift{font-size:11px;color:var(--p-missing);white-space:nowrap}
+.drift b{font-weight:600}
+
+.expander{background:none;border:0;cursor:pointer;color:var(--faint);font-family:var(--mono);
+  font-size:11px;padding:0 6px 0 0}
+.expander[aria-expanded="true"]{color:var(--ink)}
+
+.stepnav{display:flex;justify-content:space-between;align-items:center;gap:12px;
+  margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.stepnav .hint{font-size:11.5px;color:var(--faint)}
 
 /* ---------- summary rail ---------- */
 .sum-block{margin-bottom:18px}
 .sum-big{font-size:26px;font-weight:600;color:var(--ink);letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}
 .sum-unit{font-size:11.5px;color:var(--faint);margin-top:2px}
-.slider-wrap{margin-top:10px}
 .slider-top{display:flex;justify-content:space-between;align-items:baseline}
 .slider-val{font-family:var(--mono);font-size:15px;font-weight:500;color:var(--ink)}
 input[type=range]{width:100%;margin:8px 0 0;accent-color:var(--ink);background:transparent}
@@ -248,6 +284,7 @@ input[type=range]{width:100%;margin:8px 0 0;accent-color:var(--ink);background:t
   background:var(--p-missing-bg);color:var(--p-missing)}
 .ok-line{margin-top:10px;font-size:11.5px;padding:9px 11px;border-radius:5px;
   background:var(--p-auto-bg);color:var(--p-auto)}
+.blk-line{font-size:11px;color:var(--faint);margin-top:8px}
 
 .contract-in{display:flex;gap:8px;align-items:center;margin-top:8px}
 .contract-in input{max-width:none;flex:1;background:var(--surface);border-color:var(--line-strong)}
@@ -297,7 +334,6 @@ input[type=range]{width:100%;margin:8px 0 0;accent-color:var(--ink);background:t
 
 /* ---------- финансовый план ---------- */
 .months input{max-width:60px;padding:3px 6px;font-size:11.5px}
-input.auto-in{background:var(--surface);border-color:var(--line-strong);color:var(--muted)}
 .months td.nm{white-space:nowrap;color:var(--text)}
 .months tr.derived td{color:var(--muted)}
 .months tr.inflow td{background:var(--p-auto-bg)}
@@ -305,7 +341,6 @@ input.auto-in{background:var(--surface);border-color:var(--line-strong);color:va
 .chart{width:100%;height:auto;display:block}
 .chart text{font-family:var(--mono);font-size:10px;fill:var(--faint)}
 .chart text.lbl{font-size:10.5px;fill:var(--muted)}
-.scn{display:flex;gap:8px;flex-wrap:wrap}
 .legend2{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
 .legend2 span{display:flex;gap:6px;align-items:center;font-size:11px;color:var(--muted)}
 .legend2 i{width:10px;height:10px;border-radius:2px;flex:none}
@@ -325,19 +360,8 @@ input.auto-in{background:var(--surface);border-color:var(--line-strong);color:va
     <button class="crumb" data-nav="list">Объекты</button>
     <span class="sep">/</span>
     <span class="crumb-cur" id="crumbObj">Догма Юкки, секции 1–3</span>
-    <span class="sep">/</span>
-    <span class="pop-wrap">
-      <button class="variant" id="variantBtn" aria-expanded="false" aria-haspopup="true">
-        <span id="variantName">BC-36.2 vstroyka</span><i>▼</i></button>
-      <div class="pop" id="pop" hidden>
-        <div class="pop-head">Варианты конструктива</div>
-        <button class="pop-item" aria-current="true">Встройка · BC-36.2 vstroyka<span>3 180,89 м²</span></button>
-        <button class="pop-item">Навеска · BC-36.2 navesnaya<span>2 104,50 м²</span></button>
-        <div class="pop-head" style="border-top:1px solid var(--line);margin-top:4px">Соседние объекты</div>
-        <button class="pop-item" data-nav="list">Котельники К11<span>1 620,00 м²</span></button>
-        <button class="pop-item" data-nav="list">Level Причальный, фасад<span>7 480,00 м²</span></button>
-      </div>
-    </span>
+    <span class="sep" id="blockSep">/</span>
+    <span id="blockPick"></span>
   </nav>
   <div class="proto">
     <button class="btn" data-nav="list">Все объекты</button>
@@ -345,22 +369,21 @@ input.auto-in{background:var(--surface);border-color:var(--line-strong);color:va
     <span class="tag">прототип</span>
   </div>
 </header>
-<div class="objbar" id="objbar">
-  <span>Площадь <b>3 180,89 м²</b></span>
-  <span>Расчётчик <b>Груздев И.</b></span>
-  <span>Стадия <b>тендер</b></span>
-  <span>Расчёт от <b>26.08.2026</b></span>
-  <span>Заказчик <b>Догма</b></span>
+<div class="verline">
+  <span>версия от 09.09, восемь шагов</span>
+  <span class="sep">·</span>
+  <a href="./v-2026-09-08-11-shagov/">предыдущая версия</a>
 </div>
+<div class="objbar" id="objbar"></div>
 
 <nav class="tracker" id="tracker" aria-label="Этапы расчёта">
   <div class="tracker-head">
     <span class="eyebrow" id="progress"></span>
     <div class="legend">
-      <span><i class="swatch" style="background:var(--p-auto)"></i>посчитано по прайсу</span>
+      <span><i class="swatch" style="background:var(--p-auto)"></i>посчитано по справочнику</span>
       <span><i class="swatch" style="background:var(--p-manual)"></i>введено руками</span>
-      <span><i class="swatch" style="background:var(--p-tender)"></i>в тендере, ждём КП</span>
-      <span><i class="swatch" style="background:var(--p-missing)"></i>нет данных</span>
+      <span><i class="swatch" style="background:var(--p-tender)"></i>ушло в тендер</span>
+      <span><i class="swatch" style="background:var(--p-missing)"></i>данных нет</span>
     </div>
   </div>
   <div class="tr-wrap">
@@ -379,13 +402,14 @@ input.auto-in{background:var(--surface);border-color:var(--line-strong);color:va
       <span class="eyebrow">Себестоимость</span>
       <div class="sum-big" id="cost"></div>
       <div class="sum-unit" id="costM2"></div>
+      <div class="blk-line" id="blkLine"></div>
     </div>
     <div class="sum-block">
       <div class="slider-top"><span class="eyebrow">Наценка</span><span class="slider-val" id="mVal"></span></div>
       <input type="range" id="markup" min="15" max="70" step="0.1" value="39.7" aria-label="Наценка, %">
       <div class="scale">
         <span class="tick" style="left:0">15 %</span>
-        <span class="tick floor" id="floorTick">дно 31,1 %</span>
+        <span class="tick floor" id="floorTick">дно</span>
         <span class="tick" style="left:100%;transform:translateX(-100%)">70 %</span>
       </div>
     </div>
@@ -408,98 +432,320 @@ input.auto-in{background:var(--surface);border-color:var(--line-strong);color:va
 (function(){
 "use strict";
 
-/* ---- модель, снятая с файла «Догма Юкки», лист ДИР Встройка ---- */
-var S = 3180.8890600000004;          // площадь конструкций, м2
-var C = 38778638.92;                 // итого расходы (себестоимость)
-var VAT_IN = 5534550.34;             // НДС к вычету за материалы, услуги и накладные
-var GEN = 411771.82;                 // генподрядные (возмещение)
-var ADM = 49000;                     // администрирование объекта
-var HOLD = 0.05, OVH = 0.10, PROFIT_TAX = 0.25, VAT = 0.22;
+/* ==================================================================
+   Номера шагов держим здесь, чтобы не рассыпать литералы по коду.
+   ================================================================== */
+var STEP = {ozm:1, price:2, tender:3, prod:4, mount:5, extras:6, budget:7, fin:8};
+var LAST_STEP = STEP.fin;
 
-function calc(m){
-  var K = C * (1 + m);
-  var income = C * m;
-  var ovh = OVH * (K - GEN - ADM);
-  var vatOut = K * VAT / (1 + VAT) - VAT_IN;
+/* ---- параметры расчёта ------------------------------------------- */
+var PARAMS = {
+  ip_tax:            {value:0.12,  def:0.12,  label:'Нагрузка на ИП',                     unit:'доля',  src:'ПРАЙС_доставка!K39, проектирование и геодезия'},
+  payroll_share:     {value:0.7,   def:0.7,   label:'Доля на зарплатный проект',           unit:'доля',  src:'ПРАЙС_СМР!I, дефолт 70/30'},
+  funds_rate_zp:     {value:57.6,  def:57.6,  label:'Расходы на получение средств, ЗП',    unit:'%',     src:'ПРАЙС_СМР!K107'},
+  funds_rate_ip:     {value:12,    def:12,    label:'Расходы на получение средств, ИП',    unit:'%',     src:'Андрей 08.09'},
+  marketing_rate:    {value:0.45,  def:0.45,  label:'Процент на маркетинг и привлечённые средства', unit:'доля', src:'Андрей 08.09, 40–45 %', cond:true, condNote:'условно, точное число у Владимира Сергеевича, В5'},
+  vat_ru:            {value:22,    def:22,    label:'НДС, Россия',                         unit:'%',     src:'справочник налогов'},
+  vat_uz:            {value:12,    def:12,    label:'НДС, Узбекистан',                     unit:'%',     src:'справочник налогов'},
+  adjunction_discount:{value:0.35, def:0.35,  label:'Скидка примыканий',                   unit:'доля',  src:'ПРАЙС_примыкания'},
+  flashing_waste:    {value:0.30,  def:0.30,  label:'Отход нащельника',                    unit:'доля',  src:'ПРАЙС_примыкания'},
+  manipulator_norm:  {value:200,   def:200,   label:'Норма манипулятора',                  unit:'м²',    src:'Встройка!G551'},
+  garbage_norm:      {value:5000,  def:5000,  label:'Норма мусорного контейнера',          unit:'м²',    src:'ПРАЙС_СМР_прочее!G16'}
+};
+/* параметры, которые в прототипе пока никуда не подставлены */
+var PARAM_UNUSED = {ip_tax:1, funds_rate_zp:1, funds_rate_ip:1, adjunction_discount:1, flashing_waste:1};
+var paramEdited = {};
+function P(k){ return PARAMS[k].value; }
+
+/* ==================================================================
+   Модель, снятая с файла «Догма Юкки», лист ДИР Встройка.
+   Блок «Встройка» — настоящие числа. Блок «Навеска» — условный:
+   площадь 1 073 м² из документа 16, удельные цены те же, что у
+   встройки, до выгрузки от Андрея (В8).
+   ================================================================== */
+var S_VSTR = 3180.8890600000004;
+var S_NAV  = 1073;
+var NAV_K  = S_NAV / S_VSTR;
+
+var VAT_IN_VSTR = 5534550.34;   // НДС к вычету
+var GEN_VSTR    = 411771.82;    // генподрядные (возмещение)
+var ADM_VSTR    = 49000;        // администрирование объекта
+var PRJ_VSTR    = 1021363.70;   // проектирование, геодезия и ППР
+var MAT_VSTR    = 22759644.06;  // материалы, контрольная сумма
+var HOLD = 0.05, OVH = 0.10, PROFIT_TAX = 0.25;
+
+var BLOCK_NAMES = {all:'Оба блока', vstr:'Встройка', nav:'Навеска'};
+function blocks(){ return state.block === 'all' ? ['vstr','nav'] : [state.block]; }
+function kOf(b){ return b === 'nav' ? NAV_K : 1; }
+function factor(){ return state.block === 'all' ? 1 + NAV_K : kOf(state.block); }
+function isCondBlock(b){ return b === 'nav'; }
+
+/* ---- шаг 2: товарные группы прайса архитектурных систем ---------- */
+var COLS = {
+  ws:  {name:'ВС-36 / ФС-50 / SL', markup:0.45},
+  aur: {name:'Aurora',             markup:0.80},
+  rp:  {name:'РосПроф + ENSAVE AVA', markup:0.49}
+};
+var TARGET0 = 0.10;
+function discOf(col){ return 1 - (1 + state.target) / (1 + COLS[col].markup); }
+function disc0(col){ return 1 - (1 + TARGET0) / (1 + COLS[col].markup); }
+
+var AC = [
+  {n:'Профиль несущий: стойки, ригели',      col:'ws', net0:6998060.74, q:'9 702 пог. м'},
+  {n:'Профиль створки и штапик',             col:'ws', net0:1622294.73, q:'10 386 пог. м'},
+  {n:'Планки прижимные и нащельники',        col:'ws', net0:2533265.91, q:'16 332 пог. м'},
+  {n:'Закладные и кронштейны',               col:'ws', net0:453054.92,  q:'1 146 шт'},
+  {n:'Профиль МФС и уголки',                 col:'ws', net0:278852.22,  q:'3 816 пог. м'},
+  {n:'Уплотнители',                          col:'ws', net0:97288.00,   q:'8 940 пог. м'},
+  {n:'Фурнитура',                            col:'ws', net0:1240000.00, anti:0.15, q:'624 компл.'},
+  {n:'Аксессуары и комплектующие',           col:'ws', net0:1890000.00, q:'2 380 шт'},
+  {n:'Позиции Aurora',                       col:'aur',net0:0,          q:'на объекте нет'},
+  {n:'РосПроф, фурнитура поворотная',        col:'rp', net0:210000.00,  q:'180 компл.', cond:1},
+  {n:'РосПроф, петли и ответные части',      col:'rp', net0:150000.00,  q:'640 шт',     cond:1},
+  {n:'ENSAVE AVA, уплотнение и щётки',       col:'rp', net0:112201.48,  q:'2 260 пог. м', cond:1}
+];
+function acNet(r){ return r.anti ? r.net0 : r.net0 * (1 + state.target) / (1 + TARGET0); }
+function acList(r){ return r.anti ? r.net0 / (1 + r.anti) : r.net0 / (1 - disc0(r.col)); }
+function priceTotal(){ return AC.reduce(function(a,r){ return a + acNet(r); }, 0); }
+
+/* ---- шаг 3, секция А: плановые закупочные ------------------------ */
+var BUY = [
+  {k:'metiz', n:'Метизы и крепёж', holder:612480, direct:486900,
+   sh:'прайс системодержателя, наценка 1,80', sd:'плановая закупочная, прямой договор СК'},
+  {k:'krn', n:'Кронштейны стальные', sum:421950, s:'плановая закупочная, справочник снабжения'},
+  {k:'kle', n:'Клеи и герметики',    sum:268420, s:'плановая закупочная, справочник снабжения'},
+  {k:'rash',n:'Расходные материалы', sum:318088.91, s:'100 ₽/м² × площадь конструкций'}
+];
+function buySum(r){ return r.k === 'metiz' ? (state.metiz === 'holder' ? r.holder : r.direct) : r.sum; }
+function buyTotal(){ return BUY.reduce(function(a,r){ return a + buySum(r); }, 0); }
+
+/* ---- шаг 3, секция В: цены поставщиков --------------------------- */
+var TEND = [
+  {k:'sp',  n:'Стеклопакет 6М1-16Ar-6И, зона витража', q:1892, u:'м²', price:1240, st:'auto',
+   g:'Стеклопакеты', kp:{sup:'s1', date:'30.08.2026', valid:'29.09.2026'}, plan:1360},
+  {k:'ogr', n:'Стекло закалённое, зона ограждения', q:1030, u:'м²', price:null, st:'tender', g:'Стекло и ограждения'},
+  {k:'vnt', n:'Вентрешётка, заполнение', q:228, u:'м²', price:null, st:'tender', g:'Вентрешётки'},
+  {k:'tsd', n:'KM.117.02.AL Т-соединитель', q:46, u:'шт', price:null, st:'missing', g:'Профиль и комплектующие',
+   why:'в прайсе цена 0, никогда не закупали'},
+  {k:'a1',  n:'Рама оконная А112', q:38, u:'шт', price:null, st:'missing', g:'Профиль и комплектующие',
+   addr:'ПРАЙС_ОТК!K49', why:'ОТК такие окна ещё не изготавливал'},
+  {k:'a2',  n:'А112, створка верхнеподвесная с вклейкой', q:24, u:'шт', price:null, st:'missing',
+   g:'Профиль и комплектующие', addr:'ПРАЙС_ОТК!K50', why:'ОТК такие окна ещё не изготавливал'},
+  {k:'a3',  n:'А112, створка параллельно-отставная с вклейкой', q:12, u:'шт', price:null, st:'missing',
+   g:'Профиль и комплектующие', addr:'ПРАЙС_ОТК!K51', why:'ОТК такие окна ещё не изготавливал'}
+];
+function tendTotal(){ return TEND.reduce(function(a,r){ return a + (r.price ? r.q * r.price : 0); }, 0); }
+
+var MAT_REST = 0;   /* «прочие материалы», добивка до контрольной суммы; считается при старте */
+function matTotal(){ return priceTotal() + buyTotal() + tendTotal() + MAT_REST; }
+
+/* ---- шаг 4: изготовление ----------------------------------------- */
+var MAN = [
+  {k:'g1', n:'Витражи ВС-36, встроенные', vol:2220.9, rate:1344, price:1344},
+  {k:'g2', n:'Оконный блок A77',          vol:546.0,  rate:1700, price:1944, hand:1,
+   why:'загрузка низкая, ставка согласована с производством 01.09.2026'},
+  {k:'g3', n:'Дверной блок AD77',         vol:62.0,   rate:2460, price:2460},
+  {k:'g4', n:'Прочие позиции ОТК: вентрешётка, закладные, упаковка', lump:190260.17, u:'на объект', bal:1}
+];
+function manRowSum(r){ return r.lump != null ? r.lump : r.vol * r.rate; }
+function manTotal(){ return MAN.reduce(function(a,r){ return a + manRowSum(r); }, 0); }
+
+/* ---- шаг 4: доставка, справочно ---------------------------------- */
+var DELIV = [
+  {n:'Конструкции',            q:S_VSTR, u:'м²',   rate:350,   src:'ПРАЙС_доставка, ставка на м²'},
+  {n:'Створки',                q:412,    u:'шт',   rate:500,   src:'ПРАЙС_доставка', cond:1},
+  {n:'Вентрешётка, по ламелям',q:1900,   u:'шт',   rate:120,   src:'ПРАЙС_доставка', cond:1},
+  {n:'Упаковка, ящики',        q:64,     u:'ящик', rate:10000, src:'1 ящик на 50 м²'}
+];
+function delivTotal(){ return DELIV.reduce(function(a,r){ return a + r.q * r.rate; }, 0); }
+
+/* ---- шаг 5: монтаж ----------------------------------------------- */
+var MOUNT = [
+  {k:'m1', n:'Витражи ВС-36, встроенные', vol:2220.9, rate:2100},
+  {k:'m2', n:'Оконный блок A77',          vol:546.0,  rate:2600},
+  {k:'m3', n:'Дверной блок AD77',         vol:62.0,   rate:3100},
+  {k:'m4', n:'Вентрешётка',               vol:228.0,  rate:1100},
+  {k:'m5', n:'Ограждение',                vol:1030.0, rate:1800},
+  {k:'m6', n:'Защита конструкций и сдача СКС', lump:1079266.21, u:'на объект', bal:1}
+];
+var MSTAGES = [['Каркас',30],['Заполнения',22],['Примыкания',15],['Створки',22],['Сдача СКС',11]];
+function mountRowSum(r){ return r.lump != null ? r.lump : r.vol * r.rate; }
+function ipShare(r){ return r.ip != null ? r.ip / 100 : 1 - P('payroll_share'); }
+function mountTotal(){ return MOUNT.reduce(function(a,r){ return a + mountRowSum(r); }, 0); }
+function mountIp(){ return MOUNT.reduce(function(a,r){ return a + mountRowSum(r) * ipShare(r); }, 0); }
+function mountZp(){ return mountTotal() - mountIp(); }
+/* суммы этапов: последний забирает остаток, чтобы сумма этапов совпала со строкой */
+function stageSums(total){
+  var out = [], acc = 0;
+  MSTAGES.forEach(function(s, i){
+    var v = i === MSTAGES.length - 1 ? total - acc : total * s[1] / 100;
+    acc += v; out.push(v);
+  });
+  return out;
+}
+
+/* ---- шаг 6: статьи затрат ---------------------------------------- */
+var FILL_AREA = 3150;      // площадь заполнений: стеклопакет 1892 + ограждение 1030 + вентрешётка 228
+var SASH_GLASS = 546;      // стёкла, вклеиваемые в створки на производстве
+
+var AUTO = {
+  garbage: function(r){ return Math.ceil(S_VSTR / P('garbage_norm')) * r.p.price * r.p.months; },
+  manip:   function(r){ return Math.ceil((FILL_AREA - SASH_GLASS) / P('manipulator_norm')) * r.p.price; },
+  ppr:     function(r){ return r.p.price; },
+  cabins:  function(r){ return r.p.price * r.p.pcs * r.p.months + (r.p.manip + r.p.surcharge) * r.p.trips * r.p.pcs; },
+  cradles: function(r){ return r.p.day * r.p.days * r.p.pcs + (r.p.manip * r.p.trips + r.p.extra) * r.p.pcs; },
+  alp:     function(r){ return r.p.day * r.p.pcs * r.p.days; },
+  toilets: function(r){ return r.p.price * r.p.pcs * r.p.months; }
+};
+var OTH = 'Прочие расходы';
+
+var ARTICLES = [
+  {k:'gar', n:'Гарантийное обслуживание', req:'mandatory', on:true, dir:OTH,
+   rec:318088.91, acc:318088.91, src:'100 ₽/м², ПРАЙС_СМР_прочее', note:'обязательна на всех объектах'},
+  {k:'ot', n:'Охрана труда и техника безопасности', req:'mandatory', on:true, dir:OTH,
+   rec:95426.67, acc:95426.67, src:'30 ₽/м², ПРАЙС_СМР_прочее', note:''},
+  {k:'so', n:'Спецодежда', req:'mandatory', on:true, dir:OTH,
+   rec:63617.78, acc:63617.78, src:'20 ₽/м², ПРАЙС_СМР_прочее', note:'может вырасти под требования заказчика'},
+  {k:'mus', n:'Вывоз мусора и промышленных отходов', req:'mandatory', on:true, dir:OTH, auto:'garbage',
+   p:{price:36000, months:3}, acc:108000, src:'ПРАЙС_СМР_прочее!K16, 03.09',
+   supply:{price:39990, date:'08.09.2026', who:'Мусорок, вывоз мусора'},
+   note:'контейнеров по норме, цена за контейнер в месяц'},
+  {k:'tua', n:'Туалетные кабинки', req:'optional', on:true, dir:OTH, auto:'toilets',
+   p:{price:5500, pcs:1, months:3}, acc:16500, src:'ПРАЙС_СМР_прочее, 03.09',
+   supply:{price:5345, date:'08.09.2026', who:'ТД Биоэкология, всего в месяц'},
+   note:'1 кабинка на 15 человек'},
+  {k:'gen', n:'Генподрядные, возмещение', req:'mandatory', on:true, dir:OTH,
+   rec:411771.82, acc:411771.82, src:'по счётчикам: электроэнергия, вода', note:''},
+  {k:'teh', n:'Аренда строительной техники', req:'optional', on:true, dir:OTH,
+   rec:219600, acc:219600, src:'ПРАЙС_СМР_прочее', note:'манипулятор, вышка'},
+  {k:'adm', n:'Администрирование объекта строительства', req:'optional', on:true, dir:OTH,
+   rec:49000, acc:49000, src:'ПРАЙС_СМР_прочее', note:''},
+
+  {k:'man', n:'Манипулятор', req:'mandatory', on:true, dir:'Аренда строительной техники', auto:'manip',
+   p:{price:24400}, src:'ПРАЙС_СМР_прочее!K11 = 1,22 × 20 000, 03.09',
+   supply:{price:26840, date:'08.09.2026', who:'ИП Ярметов, рейс, 22 000 × 1,22'},
+   note:'на Догме манипуляторы сидят внутри строки «Аренда строительной техники», поэтому прототип не добавляет их в прочие расходы второй раз'},
+  {k:'ppr', n:'ППР, проект производства работ', req:'mandatory', on:true, dir:'Проектирование и геодезия', auto:'ppr',
+   p:{price:10000}, src:'ПРАЙС_СМР_прочее', note:'входит в категорию «Проектирование и геодезия», в прочие расходы не добавляется'},
+  {k:'byt', n:'Бытовки', req:'optional', on:false, dir:OTH, auto:'cabins',
+   p:{price:7000, pcs:2, months:6, manip:24400, surcharge:5000, trips:2},
+   src:'ПРАЙС_СМР_прочее!L18, аренда с доставкой',
+   supply:{price:7000, date:'08.09.2026', who:'Полома'},
+   note:'срок берётся со срока монтажа, доставка манипулятором туда и обратно'},
+  {k:'lul', n:'Люльки', req:'optional', on:false, dir:OTH, auto:'cradles',
+   p:{day:900, days:30, pcs:2, manip:24400, trips:2, extra:24000},
+   src:'ПРАЙС_СМР_прочее!L14, аренда с доставкой', note:'привезти и увезти нужен большой манипулятор'},
+  {k:'alp', n:'Промышленный альпинист', req:'optional', on:false, dir:OTH, auto:'alp',
+   p:{day:4500, pcs:2, days:20}, src:'прайс прочих расходов, техника по дням',
+   note:'в базу расходов на получение средств не входит'},
+
+  {k:'scs1', n:'Материалы при сдаче СКС: М1', req:'choose_one', grp:'Материалы при сдаче СКС', on:true,
+   dir:'Материалы при сдаче СКС', rec:42000, acc:42000, cond:1,
+   src:'ПРАЙС_СМР_прочее!25, выбор по типу стекла', note:'в себестоимость прототипа входит внутри материалов'},
+  {k:'scs2', n:'Материалы при сдаче СКС: М1 Сэтл', req:'choose_one', grp:'Материалы при сдаче СКС', on:false,
+   dir:'Материалы при сдаче СКС', rec:51000, acc:51000, cond:1,
+   src:'ПРАЙС_СМР_прочее!26', note:''},
+  {k:'scs3', n:'Материалы при сдаче СКС: напыление', req:'choose_one', grp:'Материалы при сдаче СКС', on:false,
+   dir:'Материалы при сдаче СКС', rec:64000, acc:64000, cond:1,
+   src:'ПРАЙС_СМР_прочее!27', note:''},
+
+  {k:'rm1', n:'Расходные материалы: холодные конструкции', req:'choose_one', grp:'Расходные материалы', on:true,
+   dir:'Материалы', rec:118000, acc:118000, cond:1,
+   src:'ПРАЙС_СМР_прочее!37, выбор по типу конструкции', note:'в себестоимость прототипа входит внутри материалов'},
+  {k:'rm2', n:'Расходные материалы: тёплые ФС', req:'choose_one', grp:'Расходные материалы', on:false,
+   dir:'Материалы', rec:146000, acc:146000, cond:1, src:'ПРАЙС_СМР_прочее!38', note:''},
+  {k:'rm3', n:'Расходные материалы: тёплые ТВС', req:'choose_one', grp:'Расходные материалы', on:false,
+   dir:'Материалы', rec:171000, acc:171000, cond:1, src:'ПРАЙС_СМР_прочее!39', note:''},
+
+  {k:'kli', n:'Клининг', req:'optional', on:false, dir:'Услуги подрядчиков',
+   rec:890648.94, acc:890648.94, src:'Встройка!547:589', note:'на Догме учтён в услугах подрядчиков'},
+  {k:'per', n:'Перестановка подъёмных механизмов', req:'optional', on:false, dir:OTH,
+   rec:0, acc:0, src:'', note:'не требуется на этом объекте'},
+  {k:'pre', n:'Представительские расходы', req:'optional', on:false, dir:OTH,
+   rec:0, acc:0, src:'', note:''}
+];
+function artRec(a){ return a.auto ? AUTO[a.auto](a) : a.rec; }
+function artAcc(a){ return a.acc != null ? a.acc : artRec(a); }
+function othTotal(){
+  return ARTICLES.reduce(function(s, a){
+    return s + (a.on && a.dir === OTH ? artAcc(a) : 0);
+  }, 0);
+}
+function fundsTotal(){ return (state.marketing + state.funds) * (1 + P('marketing_rate')); }
+
+/* ---- сводная модель и расчёт ------------------------------------- */
+function baseCost(){
+  return matTotal() + mountTotal() + manTotal() + PRJ_VSTR + othTotal() + fundsTotal();
+}
+function mdl(){
+  var k = factor();
+  return {k:k, S:S_VSTR * k, C:baseCost() * k,
+          vatIn:VAT_IN_VSTR * k, gen:GEN_VSTR * k, adm:ADM_VSTR * k};
+}
+function vatRate(){ return (state.country === 'Узбекистан' ? P('vat_uz') : P('vat_ru')) / 100; }
+
+function calcOn(M, V, m){
+  var K = M.C * (1 + m);
+  var income = M.C * m;
+  var ovh = OVH * (K - M.gen - M.adm);
+  var vatOut = K * V / (1 + V) - M.vatIn;
   var hold = HOLD * K;
   var margin = income - ovh - vatOut;
   var profit = margin * (1 - PROFIT_TAX);
-  return {K:K, income:income, ovh:ovh, vatOut:vatOut, hold:hold,
+  return {K:K, C:M.C, S:M.S, income:income, ovh:ovh, vatOut:vatOut, hold:hold,
           margin:margin, profit:profit, cf:profit - hold};
 }
-var floorM = (function(){                 // наценка, при которой живые деньги = 0
-  for (var m = 0.15; m <= 0.9; m += 0.0005) if (calc(m).cf >= 0) return m;
+function calc(m){ return calcOn(mdl(), vatRate(), m); }
+function floorM(){
+  var M = mdl(), V = vatRate();
+  for (var m = 0.15; m <= 0.9; m += 0.0005) if (calcOn(M, V, m).cf >= 0) return m;
   return 0.31;
-})();
+}
 
+/* ---- группы себестоимости ---------------------------------------- */
+function costGroups(){
+  var k = factor();
+  return [
+    ['Материалы',                matTotal() * k,   'var(--ramp-1)'],
+    ['Монтаж',                   mountTotal() * k, 'var(--ramp-2)'],
+    ['Изготовление',             manTotal() * k,   'var(--ramp-3)'],
+    ['Проектирование и геодезия', PRJ_VSTR * k,    'var(--ramp-4)'],
+    ['Прочие расходы',           (othTotal() + fundsTotal()) * k, 'var(--ramp-5)']
+  ];
+}
+
+/* ---- форматирование ---------------------------------------------- */
 var nf0 = new Intl.NumberFormat('ru-RU',{maximumFractionDigits:0});
 var nf2 = new Intl.NumberFormat('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
 function f(n){ return nf0.format(Math.round(n)); }
+function f2(n){ return nf2.format(n); }
 function mln(n){ return nf2.format(n/1e6) + ' млн'; }
-function pc(n,d){ return nf2.format(n*100).replace(/,00$/,'') + ' %'; }
+function pc(n){ return nf2.format(n*100).replace(/,00$/,'') + ' %'; }
+function pcs(n){ return nf2.format(n).replace(/,00$/,'') + ' %'; }
 
-/* ---- содержимое шагов ---- */
-var MAT_ROWS = [
-  ['WS.01.206-3','Стойка 106 мм, RAL 2 гр. с оклейкой', 3810, 'пог. м', 1061.63, 3033607.73,'auto'],
-  ['WS.01.255-3','Ригель 55 мм, RAL 2 гр. с оклейкой', 4836, 'пог. м', 583.44, 2116136.88,'auto'],
-  ['WS.05.071-3','Прижимная планка, RAL', 9264, 'пог. м', 168.99, 1174142.52,'auto'],
-  ['WS.05.086-3','Нащельник 86, RAL', 7068, 'пог. м', 256.39, 1359123.39,'auto'],
-  ['WS.01.221-3','Стойка усиленная, RAL 2 гр. с оклейкой', 852, 'пог. м', 1518.66, 970423.74,'auto'],
-  ['WS.02.212-3','Профиль створки, RAL 2 гр. с оклейкой', 3024, 'пог. м', 421.84, 956733.12,'auto'],
-  ['WS.01.205-3','Стойка 76 мм, RAL 2 гр. с оклейкой', 1056, 'пог. м', 1108.45, 877892.40,'auto'],
-  ['WS.04.216','Штапик, без окраски', 7362, 'пог. м', 120.54, 665561.61,'auto'],
-  ['WS.03.213','Закладная, без окраски', 1026, 'шт', 479.37, 368875.22,'auto'],
-  ['WS.03.009','Кронштейн стальной', 120, 'шт', 935.33, 84179.70,'manual'],
-  ['MFS.04.024-3','Профиль МФС, RAL 2 гр. с оклейкой', 2232, 'пог. м', 71.07, 118971.18,'auto'],
-  ['FS.04.013-3','Уголок 20×20×1,5, RAL 2 гр. с оклейкой', 1584, 'пог. м', 134.58, 159881.04,'auto']
-];
+/* ---- состояние ---------------------------------------------------- */
+var state = {
+  step: STEP.price,
+  m: 0.3966571,
+  mode: 'object',
+  block: 'all',
+  metiz: 'holder',
+  target: TARGET0,
+  dirForm: 'new',
+  marketing: 0,
+  funds: 0,
+  country: 'Россия',
+  form: {region:'Краснодарский край', country:'Россия', stage:'тендер',
+         calcer:'Груздев И.', customer:'Догма'},
+  open: {}          // раскрытые строки этапов монтажа
+};
+function formOk(){
+  var fm = state.form;
+  return !!(String(fm.region).trim() && String(fm.country).trim() && String(fm.stage).trim() &&
+            String(fm.calcer).trim() && String(fm.customer).trim());
+}
 
-var TENDER_ROWS = [
-  ['Стеклопакет 6М1-16Ar-6И, зона витража', '1 892 м²', 2635092, 'tender', 'КП запрошено у трёх поставщиков'],
-  ['Стекло для зоны ограждения', '1 030 м²', null, 'tender', 'нужен чертёж, без него цену не дают'],
-  ['Вентрешётка, заполнение', '228 м²', null, 'tender', 'нужен чертёж'],
-  ['WS.03.009 Кронштейн стальной', '120 шт', 84179.7, 'manual', 'цена из счёта 143710 от 25.08'],
-  ['KM.117.02.AL Т-соединитель', '46 шт', null, 'missing', 'в прайсе цена 0, никогда не закупали']
-];
-
-var ARTICLES = [
-  ['Гарантийное обслуживание', '100 ₽/м², обязательно на всех объектах', 318088.91, true, true],
-  ['Охрана труда и техника безопасности', '30 ₽/м²', 95426.67, true, true],
-  ['Спецодежда', '20 ₽/м², может вырасти под требования заказчика', 63617.78, true, true],
-  ['Вывоз мусора и промышленных отходов', 'по договору с полигоном', 108000, true, true],
-  ['Туалетные кабинки', '1 кабинка на 15 человек, 5 шт × 6 мес', 16500, true, true],
-  ['Генподрядные (возмещение)', 'по счётчикам: электроэнергия, вода', 411771.82, true, false],
-  ['Аренда строительной техники', 'манипулятор, вышка', 219600, true, false],
-  ['Администрирование объекта строительства', '', 49000, true, false],
-  ['Перестановка подъёмных механизмов', 'не требуется на этом объекте', 0, false, false],
-  ['Представительские расходы', '', 0, false, false],
-  ['Расходы на проживание бригад', 'учтены в блоке монтажа', 0, false, false],
-  ['Маркетинг и привлечённые средства', '', 0, false, false]
-];
-
-var COST_GROUPS = [
-  ['Материалы', 22759644.06, 'var(--ramp-1)'],
-  ['Монтаж', 9459756.21, 'var(--ramp-2)'],
-  ['Изготовление', 4255869.77, 'var(--ramp-3)'],
-  ['Проектирование и геодезия', 1021363.70, 'var(--ramp-4)'],
-  ['Прочие расходы', 1282005.18, 'var(--ramp-5)']
-];
-
-var STEPS = [
-  {n:1, name:'Загрузка ОЗМ', st:'done', val:'45 позиций', note:''},
-  {n:2, name:'Расценка по прайсу', st:'done', val:'13,16 млн', note:''},
-  {n:3, name:'Закупочные цены', st:'done', val:'1,72 млн', note:''},
-  {n:4, name:'Отбор на тендер', st:'tender', val:'5 групп', note:'ждём 3 КП'},
-  {n:5, name:'Цены поставщиков', st:'missing', val:'2,64 млн', note:'1 без цены'},
-  {n:6, name:'Производство', st:'done', val:'4,26 млн', note:''},
-  {n:7, name:'Монтаж', st:'manual', val:'9,46 млн', note:'правлено руками'},
-  {n:8, name:'Страна и налоги', st:'done', val:'Россия', note:''},
-  {n:9, name:'Статьи затрат', st:'manual', val:'1,28 млн', note:'8 из 12'},
-  {n:10,name:'Тендерный бюджет', st:'done', val:'итог', note:''},
-  {n:11,name:'Финансовый план', st:'manual', val:'8 мес', note:'кассовый разрыв'}
-];
-
-/* ---- вспомогательные шаблоны ---- */
+/* ---- вспомогательные шаблоны -------------------------------------- */
 function head(t, s, actions){
   return '<div class="stage-head"><div><h1 class="stage-title">'+t+'</h1>'+
     (s?'<p class="stage-sub">'+s+'</p>':'')+'</div>'+
@@ -511,247 +757,753 @@ function cells(arr){
       (c[2]?'<div class="u">'+c[2]+'</div>':'')+'</div>';
   }).join('')+'</div></div>';
 }
-function panel(title, right, body, tight){
-  return '<div class="panel"><div class="panel-head"><span class="eyebrow">'+title+'</span>'+
-    (right?'<span class="step-val">'+right+'</span>':'')+'</div>'+
+function panel(title, right, body, tight, sect){
+  return '<div class="panel'+(sect?' sect':'')+'"><div class="panel-head"><span class="eyebrow">'+
+    (sect?'<span class="sect-mark">'+sect+'</span>':'')+title+'</span>'+
+    (right?'<span class="eyebrow">'+right+'</span>':'')+'</div>'+
     '<div class="panel-body'+(tight?' tight':'')+'">'+body+'</div></div>';
 }
-var PILL = {auto:['p-auto','по прайсу'], manual:['p-manual','руками'],
-            tender:['p-tender','в тендере'], missing:['p-missing','нет данных']};
+function fold(title, right, body, open){
+  return '<details class="fold"'+(open?' open':'')+'><summary><span class="eyebrow">'+title+'</span>'+
+    (right?'<span class="eyebrow">'+right+'</span>':'')+'</summary>'+
+    '<div class="fold-body">'+body+'</div></details>';
+}
+var PILL = {auto:['p-auto','по справочнику'], manual:['p-manual','руками'],
+            tender:['p-tender','в тендере'], missing:['p-missing','данных нет']};
 function pill(k){ var p = PILL[k]; return '<span class="pill '+p[0]+'">'+p[1]+'</span>'; }
+/* карантин: та же заливка, поверх неё красная рамка и адрес ячейки */
+function quar(k, addr){
+  var p = PILL[k];
+  return '<span class="pill quar '+p[0]+'">карантин</span>'+
+    '<span class="quar-addr">'+addr+'</span>';
+}
+/* добивочная строка: остаток, которым сходится сверка с Догмой */
+function bal(){
+  return '<span class="pill bal">остаток до сверки</span>'+
+    '<span class="bal-note">'+condMark('остаток до сверки с Догмой, по строкам не разложен')+'</span>';
+}
+function balName(n){
+  return '<span class="cond" title="условно: остаток до сверки с Догмой, по строкам не разложен">'+n+'</span>'+
+    '<span class="bal-note">остаток до сверки с Догмой</span>';
+}
+function cond(txt, note){
+  return '<span class="cond" title="условно: '+note+'">'+txt+'</span>';
+}
+function condMark(note){ return '<span class="cond-mark" title="условно: '+note+'">условно</span>'; }
+function what(txt){ return '<div class="note what"><b>Что здесь происходит.</b> '+txt+'</div>'; }
+function hands(txt){ return '<div class="note hands"><b>Что делать руками.</b> '+txt+'</div>'; }
 
-/* ---- экраны ---- */
+function stepNav(){
+  var back = state.step > 1, next = state.step < LAST_STEP;
+  var block = state.step === STEP.ozm && !formOk();
+  return '<div class="stepnav">'+
+    (back ? '<button class="btn" data-go="'+(state.step-1)+'">← Назад</button>' : '<span></span>')+
+    '<span class="hint">Шаг '+state.step+' из '+LAST_STEP+
+      (block ? ' · заполните обязательные поля объекта' : '')+'</span>'+
+    (next ? '<button class="btn btn-primary" id="btnNext" data-go="'+(state.step+1)+'"'+
+            (block?' disabled':'')+'>Дальше →</button>' : '<span></span>')+
+    '</div>';
+}
+
+/* ---- трекер -------------------------------------------------------- */
+function steps(){
+  var k = factor();
+  var artOn = ARTICLES.filter(function(a){ return a.on; }).length;
+  var missing = TEND.filter(function(t){ return t.st === 'missing'; }).length;
+  var waiting = TEND.filter(function(t){ return t.st === 'tender'; }).length;
+  return [
+    {n:STEP.ozm,    name:'Объект и ОЗМ',       st: formOk() ? 'done' : 'missing',
+     val: formOk() ? '45 позиций' : 'нет обязательных полей', note: formOk() ? '' : 'заполните поля'},
+    {n:STEP.price,  name:'Расценка по прайсу', st:'done',    val: mln(priceTotal()*k), note:''},
+    {n:STEP.tender, name:'Закупка и тендер',   st: missing ? 'missing' : 'tender',
+     val: mln((buyTotal()+tendTotal())*k), note: missing + ' без цены, ждём ' + waiting + ' КП'},
+    {n:STEP.prod,   name:'Производство',       st:'done',    val: mln(manTotal()*k), note:''},
+    {n:STEP.mount,  name:'Монтаж',             st:'manual',  val: mln(mountTotal()*k), note:'ставки правлены'},
+    {n:STEP.extras, name:'Статьи затрат',      st:'manual',  val: mln((othTotal()+fundsTotal())*k),
+     note: artOn + ' из ' + ARTICLES.length},
+    {n:STEP.budget, name:'Тендерный бюджет',   st:'done',    val:'итог', note:''},
+    {n:STEP.fin,    name:'Финансовый план',    st:'manual',  val:'8 мес', note:'кассовый разрыв'}
+  ];
+}
+
+function renderRail(){
+  var ST = steps();
+  document.getElementById('steps').innerHTML = ST.map(function(s){
+    var attn = s.st && s.st !== 'done' && s.note;
+    return '<li class="tstep'+(s.n===state.step?' active':'')+'"'+(s.st?' data-st="'+s.st+'"':'')+'>'+
+      '<button data-step="'+s.n+'" aria-current="'+(s.n===state.step?'step':'false')+'">'+
+      '<span class="tdot">'+(s.st==='done' ? '✓' : s.n)+'</span>'+
+      '<span class="tlabel">'+s.name+'</span>'+
+      '<span class="tval'+(attn?' attn':'')+'">'+(attn ? s.note : (s.val||''))+'</span>'+
+      '</button></li>';
+  }).join('');
+  var done = ST.filter(function(s){ return s.st === 'done'; }).length;
+  var attn = ST.length - done;
+  document.getElementById('fill').style.width = ((state.step-1)/(ST.length-1)*100)+'%';
+  document.getElementById('progress').textContent =
+    'Этапы · ' + done + ' из ' + ST.length + ' готовы, ' + attn + ' требуют внимания';
+}
+
+function renderCrumbs(){
+  var showBlock = state.mode === 'object' && state.step >= STEP.price && state.step <= STEP.budget;
+  document.getElementById('blockSep').hidden = !showBlock;
+  var el = document.getElementById('blockPick');
+  el.hidden = !showBlock;
+  el.innerHTML = showBlock
+    ? '<span class="seg sm" role="group" aria-label="Блок объекта">'+
+      ['all','vstr','nav'].map(function(b){
+        return '<button data-block="'+b+'" aria-pressed="'+(state.block===b)+'">'+BLOCK_NAMES[b]+'</button>';
+      }).join('')+'</span>'
+    : '';
+  var M = mdl();
+  document.getElementById('objbar').innerHTML =
+    '<span>Блок <b>'+BLOCK_NAMES[state.block]+'</b></span>'+
+    '<span>Площадь <b>'+f2(M.S)+' м²</b>'+(state.block!=='vstr'?' '+condMark('навеска 1 073 м², документ 16, В8'):'')+'</span>'+
+    '<span>Регион <b>'+(state.form.region||'—')+'</b></span>'+
+    '<span>Страна <b>'+state.form.country+'</b></span>'+
+    '<span>Расчётчик <b>'+state.form.calcer+'</b></span>'+
+    '<span>Стадия <b>'+state.form.stage+'</b></span>'+
+    '<span>Заказчик <b>'+state.form.customer+'</b></span>';
+}
+
 var views = {};
+var views_1, views_2, views_3, views_4, views_5, views_6, views_7, views_8;
 
-views[1] = function(){
-  return head('Загрузка ОЗМ',
-    'Выгрузка списка материалов из LogiKal. Из неё берутся артикул, количество, длина хлыста и площадь конструкций — дальше всё считается от этих чисел.',
-    '<button class="btn">Заменить файл</button>') +
+/* ==================================================================
+   Шаг 1. Объект и ОЗМ
+   ================================================================== */
+var HOLES = [
+  {n:'Нет артикула в прайсе', cnt:3, why:'позиция есть в ОЗМ, кода в прайсе нет', st:'missing'},
+  {n:'Цена ноль', cnt:1, why:'код нашёлся, цена в прайсе пустая или ноль', st:'missing'},
+  {n:'Суффикс −1 у окрашиваемой позиции', cnt:4, why:'LogiKal ставит его сам, позиция уходит по цене без покраски', st:'manual'}
+];
+var ZAHV = [
+  {n:'Захватка 1, оси 1–6',   s:412.4, t:'ВС-36 встроенные'},
+  {n:'Захватка 2, оси 6–11',  s:398.1, t:'ВС-36 встроенные'},
+  {n:'Захватка 3, оси 11–16', s:405.7, t:'ВС-36 встроенные'},
+  {n:'Захватка 4, входная группа', s:118.0, t:'AD77, двери'},
+  {n:'Захватки 5–13',         s:1846.7, t:'смешанные, свёрнуты'}
+];
+
+function fieldTxt(k, label, req){
+  var v = state.form[k];
+  var bad = req && !String(v).trim();
+  return '<div><div class="field-lbl">'+label+(req?'<span class="req-star">*</span>':'')+'</div>'+
+    '<input type="text" class="wide'+(bad?'':' auto-in')+'" data-field="'+k+'" value="'+v+'" aria-label="'+label+'">'+
+    (bad?'<div class="field-note" style="color:var(--p-missing)">поле обязательное</div>':'')+'</div>';
+}
+function fieldSel(k, label, opts){
+  var v = state.form[k];
+  return '<div><div class="field-lbl">'+label+'<span class="req-star">*</span></div>'+
+    '<select class="wide auto-in" data-field="'+k+'" aria-label="'+label+'">'+
+    opts.map(function(o){ return '<option'+(o===v?' selected':'')+'>'+o+'</option>'; }).join('')+
+    '</select></div>';
+}
+
+function paramsPanel(){
+  var rows = Object.keys(PARAMS).map(function(k){
+    var p = PARAMS[k];
+    var unused = PARAM_UNUSED[k];
+    return '<tr><td>'+p.label+
+      (p.cond ? ' '+condMark(p.condNote) : '')+
+      (unused ? '<div style="font-size:10.5px;color:var(--faint)">в расчёте прототипа не участвует</div>' : '')+
+      '</td>'+
+      '<td class="r"><input type="text" class="'+(paramEdited[k]?'':'auto-in')+'" data-param="'+k+
+        '" value="'+String(p.value).replace('.',',')+'" aria-label="'+p.label+'"></td>'+
+      '<td class="mono" style="font-size:11px;color:var(--faint)">'+p.unit+'</td>'+
+      '<td class="r num" style="color:var(--faint)">'+String(p.def).replace('.',',')+'</td>'+
+      '<td class="mono" style="font-size:11px;color:var(--muted)">'+p.src+'</td></tr>';
+  }).join('');
+  return fold('Параметры расчёта', 'правка меняет расчёт там, где параметр используется',
+    '<div class="tw"><table><thead><tr><th>Параметр</th><th class="r">Значение</th><th>Ед.</th>'+
+    '<th class="r">По умолчанию</th><th>Источник</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<div class="note">Значение по умолчанию берётся из шаблона или из ответа Андрея. '+
+    'Правленое поле окрашивается охрой и остаётся таким до сброса.</div>');
+}
+
+views_1 = function(){
+  var brows = [
+    ['Встройка · BC-36.2 vstroyka', f2(S_VSTR)+' м²', 'ОЗМ от 26.08.2026, посчитан', 'auto', ''],
+    ['Навеска · BC-36.2 navesnaya', cond(f2(S_NAV)+' м²','площадь из документа 16, выгрузки нет, В8'),
+     'удельные цены взяты как у встройки', 'manual', condMark('ждём выгрузку от Андрея, В8')]
+  ].map(function(r){
+    return '<tr><td>'+r[0]+'</td><td class="r num">'+r[1]+'</td><td style="color:var(--muted)">'+r[2]+'</td>'+
+      '<td>'+pill(r[3])+' '+r[4]+'</td></tr>';
+  }).join('');
+
+  var hrows = HOLES.map(function(h){
+    return '<tr><td>'+h.n+'</td><td class="r num">'+h.cnt+'</td>'+
+      '<td style="color:var(--muted)">'+h.why+'</td><td>'+pill(h.st)+'</td></tr>';
+  }).join('');
+
+  var zrows = ZAHV.map(function(z){
+    return '<tr><td>'+z.n+'</td><td class="r num">'+f2(z.s)+'</td><td style="color:var(--muted)">'+z.t+'</td></tr>';
+  }).join('');
+
+  return head('Объект и ОЗМ',
+    'Выгрузка списка материалов из LogiKal плюс паспорт объекта. Регион и страна задаются здесь, а не в конце: от них зависят прайсы, ставка НДС и курс.',
+    '<button class="btn" data-passport>Паспорт файла ОЗМ</button><button class="btn">Заменить файл</button>') +
+  what('Из ОЗМ берутся артикул, количество, длина хлыста и площадь конструкций. Дальше всё считается от этих чисел. '+
+       'Пока обязательные поля объекта не заполнены, кнопка «Дальше» не работает.') +
   cells([['Файл','ОЗМ_Догма_сек1-3.xlsx','LogiKal, выгружен 26.08.2026'],
-         ['Площадь конструкций','3 180,89','м², идёт в расчёт всех ставок'],
+         ['Площадь конструкций', f2(mdl().S), 'м², блок «'+BLOCK_NAMES[state.block]+'»'],
          ['Позиций распознано','45','19 профилей, 26 аксессуаров']]) +
-  panel('Что распознано','', '<div class="kv">'+
-    '<div><span class="k">Системы</span><span class="v">AVA WS-36, FS-50, MFS-50</span></div>'+
-    '<div><span class="k">Группа покраски</span><span class="v">RAL 2 гр. с оклейкой</span></div>'+
-    '<div><span class="k">Вентрешётка</span><span class="v">228 м²</span></div>'+
-    '<div><span class="k">Решётка ограждения</span><span class="v">1 030 м²</span></div>'+
-    '<div><span class="k">Профиль, всего</span><span class="v">41 916 пог. м</span></div>'+
-    '</div>') +
-  panel('Требует проверки','4 позиции',
-    '<div class="note"><b>Суффикс покраски −1 у окрашиваемых позиций.</b> LogiKal ставит его сам, когда цвет задан как «RAL» без группы, и позиция уходит в расчёт по цене без покраски. Проверьте WS.03.009, WS.03.213, WS.03.214, WS.04.216 — если они красятся, поменяйте группу вручную.</div>');
+
+  panel('Паспорт объекта', 'звёздочкой отмечены обязательные поля',
+    '<div class="grid2">'+
+    fieldTxt('region','Регион', true)+
+    fieldSel('country','Страна', ['Россия','Узбекистан'])+
+    fieldSel('stage','Стадия', ['расчёт','тендер','выигран','проигран'])+
+    fieldTxt('calcer','Расчётчик', true)+
+    fieldTxt('customer','Заказчик', true)+
+    '</div>'+
+    '<div class="note">Страна переключает ставку НДС и прайсы производства и монтажа. '+
+    'Сами ставки лежат в справочнике налогов и правятся не здесь, а на шаге «Тендерный бюджет» их видно только для чтения.</div>') +
+
+  panel('Объект и блоки', 'итого '+f2(S_VSTR+S_NAV)+' м²',
+    '<div class="tw"><table><thead><tr><th>Блок</th><th class="r">Площадь</th><th>Откуда</th><th>Состояние</th></tr></thead>'+
+    '<tbody>'+brows+'</tbody></table></div>'+
+    '<div class="note">Защита конструкций, сдача СКС и всё, что считается «на объект», идёт от общей площади обоих блоков. '+
+    'Монтаж и изготовление разделяются по блокам: разные типы стоят разных денег.</div>', false) +
+
+  paramsPanel() +
+
+  panel('Захватки', '13 штук',
+    '<div class="tw"><table><thead><tr><th>Захватка</th><th class="r">Площадь, м²</th><th>Тип конструкций</th></tr></thead>'+
+    '<tbody>'+zrows+'</tbody></table></div>'+
+    '<div class="note">Раскрой считается по захваткам, а не единым куском: так строят и так заказывают конструкторы. '+
+    'Отход профиля из-за этого выше идеального. Решение принимается в начале расчёта и дальше не меняется.</div>') +
+
+  panel('Три вида дырок в ОЗМ', HOLES.reduce(function(a,h){ return a+h.cnt; },0)+' позиций',
+    '<div class="tw"><table><thead><tr><th>Вид</th><th class="r">Позиций</th><th>Причина</th><th>Состояние</th></tr></thead>'+
+    '<tbody>'+hrows+'</tbody></table></div>') +
+  hands('Проверить регион и заказчика, посмотреть паспорт файла и убедиться, что распозналась та выгрузка. '+
+        'Дырки здесь не правятся: они подсвечиваются и уходят дальше, на шаг расценки и на шаг закупки.') +
+  stepNav();
 };
 
-views[2] = function(){
-  var rows = MAT_ROWS.map(function(r){
-    return '<tr><td class="art">'+r[0]+'</td><td>'+r[1]+'</td>'+
-      '<td class="r num">'+f(r[2])+'</td><td class="mono" style="font-size:11px;color:var(--faint)">'+r[3]+'</td>'+
-      '<td class="r num">'+nf2.format(r[4])+'</td>'+
-      '<td class="r num">'+f(r[5])+'</td><td>'+pill(r[6])+'</td></tr>';
+/* ==================================================================
+   Шаг 2. Расценка по прайсу
+   ================================================================== */
+var QUAR2 = [
+  {n:'ПВХ панель 32 мм', v:'4 200 / 5 300 / 550 ₽', st:'auto',
+   addr:'одно имя, три цены, F13 · ПРАЙС_заполнения!D44:D46',
+   why:'по формуле видно, что 550 это покрытие за м² с двух сторон, а имя строки говорит «панель»'},
+  {n:'Минплита 100 мм в наборе примыкания', v:'736 ₽ вместо 16 800 ₽', st:'manual',
+   addr:'цена по чужой позиции, F14 · ПРАЙС_примыкания!K89',
+   why:'цена берётся у пены, из-за этого одна и та же минплита в наборах 27 и 85 стоит разных денег'}
+];
+
+views_2 = function(){
+  var k = factor();
+  var rows = AC.map(function(r){
+    var d = r.anti ? -r.anti : discOf(r.col);
+    return '<tr><td>'+r.n+(r.cond?' '+condMark('состав системных групп Андрей не расписал, В7'):'')+'</td>'+
+      '<td style="color:var(--muted)">'+COLS[r.col].name+'</td>'+
+      '<td class="mono" style="font-size:11px;color:var(--faint)">'+r.q+'</td>'+
+      '<td class="r num" style="color:var(--faint)">'+f(acList(r)*k)+'</td>'+
+      '<td class="r num">'+(r.anti ? '−'+pcs(r.anti*100)+' антискидка' : pcs(d*100))+'</td>'+
+      '<td class="r num">'+f(acNet(r)*k)+'</td>'+
+      '<td>'+pill(r.cond ? 'manual' : 'auto')+'</td></tr>';
   }).join('');
+
+  var cols = Object.keys(COLS).map(function(c){
+    return '<div><div class="eyebrow">'+COLS[c].name+'</div>'+
+      '<div class="sum-big" style="font-size:20px;margin-top:4px">'+pcs(discOf(c)*100)+'</div>'+
+      '<div class="field-note">наценка прайса '+pcs(COLS[c].markup*100)+', на выходе +'+pcs(state.target*100)+'</div></div>';
+  }).join('');
+
+  var qrows = QUAR2.map(function(q){
+    return '<tr><td>'+q.n+'</td><td class="r num">'+q.v+'</td>'+
+      '<td style="color:var(--muted)">'+q.why+'</td>'+
+      '<td>'+quar(q.st, q.addr)+'</td></tr>';
+  }).join('');
+
   return head('Расценка по прайсу',
-    'Цена ищется по коду «артикул + суффикс покраски» в прайсе архитектурных систем. Скидка приводит наценку прайса к той, с которой систему продают на этот объект.',
-    '<button class="btn">Прайс АС · 26.08</button><button class="btn">Пересчитать</button>') +
-  panel('Скидка на объекте','', '<div class="grid2">'+
-    '<div><div class="eyebrow">Колонка WS · FS · SL</div>'+
-      '<div class="field" style="margin-top:6px"><input type="text" value="25" aria-label="Скидка WS FS SL, %"><span class="sum-unit">%</span></div>'+
-      '<div class="step-note" style="margin-top:5px">наценка прайса 45 %, на выходе +9,4 %</div></div>'+
-    '<div><div class="eyebrow">Колонка Aurora</div>'+
-      '<div class="field" style="margin-top:6px"><input type="text" value="36" aria-label="Скидка Aurora, %"><span class="sum-unit">%</span></div>'+
-      '<div class="step-note" style="margin-top:5px">на объекте нет позиций Aurora</div></div>'+
-    '</div>') +
-  panel('Позиции ОЗМ','показаны 12 из 45',
-    '<div class="tw"><table><thead><tr><th>Артикул</th><th>Наименование</th><th class="r">Кол-во</th><th></th>'+
-    '<th class="r">Цена, ₽</th><th class="r">Со скидкой, ₽</th><th>Источник</th></tr></thead>'+
+    'Цена ищется по коду «артикул плюс суффикс покраски» в прайсе архитектурных систем. Скидка приводит наценку прайса к той, с которой систему продают на этот объект.',
+    '<button class="btn">Прайс АС · 08.09</button><button class="btn">Пересчитать</button>') +
+  what('Весь ОЗМ попадает сюда целиком. Сначала подставляется цена по прайсу систем, потом по колонке товарной группы считается скидка: '+
+       'одна целевая наценка объекта, а скидка у каждой колонки своя, потому что наценка прайса разная. На фурнитуру идёт антискидка, то есть наценка. '+
+       'Три вида дырок подсвечиваются и уходят на шаг закупки, здесь они не правятся.') +
+  cells([['Материалы по прайсу АС', f(priceTotal()*k)+' ₽', f2(priceTotal()*k/mdl().S)+' ₽/м²'],
+         ['Целевая наценка объекта', pcs(state.target*100), 'из неё считается скидка по каждой колонке'],
+         ['Товарных групп', String(AC.length), '3 колонки наценок']]) +
+
+  panel('Целевая наценка и скидки по колонкам', 'скидка = 1 − (1 + цель) / (1 + наценка прайса)',
+    '<div class="grid2" style="margin-bottom:14px"><div>'+
+    '<div class="field-lbl">Целевая наценка объекта, %</div>'+
+    '<div class="field"><input type="text" data-target value="'+pcs(state.target*100).replace(' %','')+
+      '" aria-label="Целевая наценка, %"><span class="sum-unit">%</span></div>'+
+    '<div class="field-note">одна на объект, скидки по колонкам считаются из неё</div></div></div>'+
+    '<div class="grid3" style="background:none;gap:16px">'+cols+'</div>') +
+
+  panel('Товарные группы прайса архитектурных систем', 'показаны все '+AC.length,
+    '<div class="tw"><table><thead><tr><th>Группа</th><th>Колонка</th><th>Объём</th>'+
+    '<th class="r">По прайсу, ₽</th><th class="r">Скидка</th><th class="r">В расчёте, ₽</th><th>Источник</th></tr></thead>'+
     '<tbody>'+rows+'</tbody>'+
-    '<tfoot><tr><td colspan="5">Профили и аксессуары, итого</td><td class="r num">15 585 018</td><td></td></tr></tfoot>'+
+    '<tfoot><tr><td colspan="5">Итого по прайсу АС</td><td class="r num">'+f(priceTotal()*k)+'</td><td></td></tr></tfoot>'+
     '</table></div>', true) +
-  panel('Не найдено в прайсе','3 позиции',
-    '<div class="note">Цена не подставлена, ноль не ставим. Позиции помечены как <b>нет данных</b> и собраны в список на шаге 4, чтобы уйти запросом в снабжение.</div>');
+
+  panel('Карантин: данные есть, но им нельзя верить', String(QUAR2.length)+' строки',
+    '<div class="tw"><table><thead><tr><th>Позиция</th><th class="r">Что в файле</th><th>Почему нельзя считать</th>'+
+    '<th>Состояние</th></tr></thead><tbody>'+qrows+'</tbody></table></div>'+
+    '<div class="note">Заливка остаётся прежней: данные пришли из справочника или введены руками. '+
+    'Красная рамка означает, что верить им нельзя, пока Андрей не ответит. Под рамкой стоит адрес ячейки в файле.</div>', true) +
+  hands('Поставить целевую наценку объекта. Проверить позиции РосПроф: состав системных групп ещё не расписан, суммы условные. '+
+        'Строки в карантине не трогать, они ждут ответа.') +
+  stepNav();
 };
 
-views[3] = function(){
-  var rows = [
-    ['Метизы и крепёж','плановая закупочная, у системодержателя', 612480, 'auto'],
-    ['Кронштейны стальные','плановая закупочная', 421950, 'auto'],
-    ['Клеи и герметики','плановая закупочная', 268420, 'auto'],
-    ['Расходные материалы','100 ₽/м² × 3 180,89', 318088.91, 'auto'],
-    ['Уплотнители','по прайсу системы', 97288, 'auto']
-  ].map(function(r){
-    return '<tr><td>'+r[0]+'</td><td style="color:var(--muted)">'+r[1]+'</td>'+
-      '<td class="r num">'+f(r[2])+'</td><td>'+pill(r[3])+'</td></tr>';
+/* ==================================================================
+   Шаг 3. Закупка и тендер: три секции
+   ================================================================== */
+function tendState(r){ return r.st; }
+function priceValid(r){
+  if (!r.kp) return null;
+  return {from:r.kp.date, to:r.kp.valid};
+}
+function ctxButton(r){
+  var rs = reqsFor(r.g || '');
+  var got = rs.filter(function(x){ return x.st === 'got'; });
+  if (r.kp || got.length)
+    return '<button class="btn btn-sm" data-kp="'+r.k+'">Открыть КП</button>';
+  var sent = rs.filter(function(x){ return x.st === 'sent'; });
+  if (sent.length)
+    return '<button class="btn btn-sm" data-remind="'+r.g+'">Напомнить · ждём с '+sent[0].date+'</button>';
+  return '<button class="btn btn-sm" data-req="'+r.g+'">Запросить</button>';
+}
+
+views_3 = function(){
+  var k = factor();
+
+  /* --- секция А --- */
+  var arows = BUY.map(function(r){
+    var src = r.k === 'metiz' ? (state.metiz === 'holder' ? r.sh : r.sd) : r.s;
+    return '<tr><td>'+r.n+'</td><td style="color:var(--muted)">'+src+'</td>'+
+      '<td class="r num">'+f(buySum(r)*k)+'</td><td>'+pill('auto')+'</td></tr>';
   }).join('');
-  return head('Плановые закупочные цены',
-    'То, что не продаётся через системодержателя или закупается по плановой цене: метизы, кронштейны, клеи, расходники.',
-    '<button class="btn">Файл цен · 26.08</button>') +
-  panel('Позиции','', '<div class="tw"><table><thead><tr><th>Группа</th><th>Источник цены</th>'+
-    '<th class="r">Сумма, ₽</th><th></th></tr></thead><tbody>'+rows+'</tbody>'+
-    '<tfoot><tr><td colspan="2">Итого</td><td class="r num">1 718 227</td><td></td></tr></tfoot></table></div>', true) +
-  panel('Изменилось с прошлого объекта','',
-    '<div class="note">Метизы снова закупаются <b>у системодержателя</b>, максимальная скидка с них снята. Если объект считался до августа, цены отличаются.</div>');
+
+  var secA = panel('Плановые закупочные цены', f(buyTotal()*k)+' ₽',
+    '<div class="grid2" style="margin-bottom:12px"><div>'+
+    '<div class="field-lbl">Метизы закупаются</div>'+
+    '<div class="seg sm" role="group" style="margin-top:4px">'+
+      '<button data-metiz="holder" aria-pressed="'+(state.metiz==='holder')+'">через системодержателя</button>'+
+      '<button data-metiz="direct" aria-pressed="'+(state.metiz==='direct')+'">напрямую у поставщиков</button>'+
+    '</div>'+
+    '<div class="field-note">Павел говорит «напрямую», Андрей 01.09 говорит «через системодержателя». '+
+    'Конфликт К1, решение за Павлом, вопрос В1. По умолчанию как у Андрея.</div></div></div>'+
+    '<div class="tw"><table><thead><tr><th>Группа</th><th>Источник цены</th>'+
+    '<th class="r">Сумма, ₽</th><th>Состояние</th></tr></thead><tbody>'+arows+'</tbody>'+
+    '<tfoot><tr><td colspan="2">Итого по секции</td><td class="r num">'+f(buyTotal()*k)+'</td><td></td></tr></tfoot>'+
+    '</table></div>'+
+    '<div class="note">Уплотнители убраны из этой секции: они продаются по прайсу системы и расцениваются на шаге 2.</div>',
+    false, 'А');
+
+  /* --- секция Б --- */
+  var brows = TEND.filter(function(r){ return !r.kp; }).map(function(r){
+    return '<label class="chk"><input type="checkbox" data-tend="'+r.k+'"'+(r.st!=='manual'?' checked':'')+'>'+
+      '<span class="body"><span class="nm">'+r.n+'</span>'+
+      '<span class="sub">'+(r.why || 'нужен чертёж, без него цену не дают')+
+        (r.addr ? ' · '+r.addr : '')+'</span></span>'+
+      '<span class="amt">'+nf0.format(r.q)+' '+r.u+'</span>'+
+      '<span style="margin-left:10px">'+pill(r.st)+'</span></label>';
+  }).join('');
+
+  var secB = panel('Отбор на тендер', TEND.filter(function(r){ return !r.kp; }).length+' позиций',
+    brows +
+    '<div style="margin-top:14px">'+reqGroupsPanel()+'</div>'+
+    '<div class="note">Позиции группируются по товарным группам, к каждой подтягиваются поставщики из справочника. '+
+    'Запрос собирается письмом со списком позиций, <b>прототип его показывает и ставит статус в журнал</b>, отправка руками. '+
+    'Три позиции А112 цены не имеют и не будут иметь до первого объекта: ОТК такие окна ещё не изготавливал.</div>',
+    false, 'Б');
+
+  /* --- секция В --- */
+  var crows = TEND.map(function(r){
+    var v = priceValid(r);
+    return '<tr><td>'+r.n+(r.addr ? '<div class="quar-addr">'+r.addr+'</div>' : '')+'</td>'+
+      '<td class="r num">'+nf0.format(r.q * k)+' '+r.u+'</td>'+
+      '<td class="r">'+(r.price
+          ? '<input type="text" class="auto-in" data-tprice="'+r.k+'" value="'+r.price+'" aria-label="Цена за единицу">'
+          : '<span style="color:var(--faint)">—</span>')+'</td>'+
+      '<td class="r num">'+(r.price ? f(r.q * r.price * k) : '—')+'</td>'+
+      '<td style="color:var(--muted)">'+(v
+          ? 'КП от '+v.from+'<div class="field-note">'+cond('годна до '+v.to, 'срок годности цены в прайсах не задан, взято 30 дней')+'</div>'
+          : (r.why || 'запроса не было'))+'</td>'+
+      '<td>'+pill(r.st)+'</td><td class="r">'+ctxButton(r)+'</td></tr>';
+  }).join('');
+
+  var secC = panel('Цены поставщиков', f(tendTotal()*k)+' ₽',
+    '<div class="tw"><table><thead><tr><th>Позиция</th><th class="r">Объём</th><th class="r">Цена за ед., ₽</th>'+
+    '<th class="r">Сумма, ₽</th><th>Основание</th><th>Состояние</th><th></th></tr></thead><tbody>'+crows+'</tbody>'+
+    '<tfoot><tr><td colspan="3">Итого по секции</td><td class="r num">'+f(tendTotal()*k)+'</td><td colspan="3"></td></tr></tfoot>'+
+    '</table></div>'+
+    '<div class="note">Кнопка справа меняется по состоянию строки: есть КП — «Открыть КП», ждём ответа — «Напомнить» со сроком, '+
+    'запроса не было — «Запросить».</div>', true, 'В');
+
+  var restPanel = panel('Остаток до сверки с Догмой', f(MAT_REST*k)+' ₽',
+    '<div class="tw"><table><thead><tr><th>Строка</th><th class="r">Сумма, ₽</th><th>Состояние</th></tr></thead>'+
+    '<tbody><tr><td>'+balName('Заполнения и прочие материалы, не разложенные в прототипе')+'</td>'+
+    '<td class="r num">'+f(MAT_REST*k)+'</td><td>'+bal()+'</td></tr></tbody></table></div>'+
+    '<div class="note">Категория «Материалы» на Догме равна '+f(MAT_VSTR)+' ₽. По строкам прототип раскладывает '+
+    'прайс архитектурных систем, плановые закупочные и цены поставщиков; разница остаётся здесь одной строкой. '+
+    '<b>Это не расчёт, а остаток.</b> Он не зелёный и не меняется ни от переключателя блока по строкам, '+
+    'ни от правки ставок и цен: всё, что вы правите, идёт в итог, а не в остаток.</div>', true);
+
+  var missing = TEND.filter(function(r){ return r.st === 'missing'; }).length;
+  var waiting = TEND.filter(function(r){ return r.st === 'tender'; }).length;
+
+  return head('Закупка и тендер',
+    'Три секции одного шага: плановые закупочные цены, отбор позиций на тендер и цены, пришедшие от поставщиков. Раньше это были три отдельных шага.',
+    '<button class="btn" data-nav="sup">Справочник поставщиков</button>'+
+    '<button class="btn btn-primary">Отправить на тендер</button>') +
+  what('Позиции, которые не покупаются у системодержателя (стекло, метизы, кронштейны, герметики, расходники), '+
+       'получают плановую закупочную цену из справочника снабжения. Что нашлось, помечено зелёным. '+
+       'Что не нашлось, отмечается на тендер, уходит запросом поставщикам и возвращается сюда же ценой из КП.') +
+  cells([['Закупка и тендер, итого', f((buyTotal()+tendTotal())*k)+' ₽',
+          'секция А '+f(buyTotal()*k)+' ₽, секция В '+f(tendTotal()*k)+' ₽'],
+         ['Ждём КП', String(waiting), 'запросы отправлены'],
+         ['Данных нет', String(missing), 'в том числе три позиции А112']]) +
+  secA + secB + secC + restPanel +
+  hands('Выбрать, как закупаются метизы. Отметить, по каким позициям запрашиваем цены, и собрать запрос. '+
+        'Полученные цены вписать руками, основание остаётся видно в строке.') +
+  stepNav();
 };
 
-views[4] = function(){
-  var rows = TENDER_ROWS.map(function(r,i){
-    return '<label class="chk"><input type="checkbox"'+(r[3]!=='manual'?' checked':'')+'>'+
-      '<span class="body"><span class="nm">'+r[0]+'</span><span class="sub">'+r[4]+'</span></span>'+
-      '<span class="amt">'+(r[2]!==null?f(r[2])+' ₽':'—')+'</span>'+
-      '<span style="margin-left:10px">'+pill(r[3])+'</span></label>';
+/* окно КП по позиции */
+function kpModal(k){
+  var r = null;
+  TEND.forEach(function(x){ if (x.k === k) r = x; });
+  if (!r) return;
+  var rs = reqsFor(r.g || '').filter(function(x){ return x.st === 'got'; });
+  var body = rs.map(function(x){
+    var s = supById(x.sup);
+    var best = r.kp && x.sup === r.kp.sup;
+    return '<tr'+(best?' style="font-weight:600"':'')+'><td>'+s.name+'</td>'+
+      '<td class="mono" style="font-size:11px;color:var(--faint)">'+x.resp+'</td>'+
+      '<td class="r num">'+(x.sum ? f(x.sum) : '—')+'</td>'+
+      '<td style="color:var(--muted)">'+(x.note||'—')+'</td>'+
+      '<td>'+(best?'<span class="pill p-auto">взято в расчёт</span>':'')+'</td></tr>';
   }).join('');
-  return head('Отбор на тендер',
-    'Отмечаем, по каким материалам запрашиваем цены. Отмеченные переходят в статус «уточнение цены» и попадают в список запроса.',
-    '<button class="btn-primary btn">Отправить на тендер</button><button class="btn" data-nav="sup">Справочник поставщиков</button>') +
-  panel('Материалы к уточнению','4 из 5 отмечено', rows) +
-  panel('Запросы поставщикам', REQUESTS.length + ' по объекту', reqGroupsPanel()) +
-  panel('Как уходит запрос','',
-    '<div class="note">Позиции группируются по товарным группам, к каждой подтягиваются поставщики из справочника. ' +
-    'Запрос собирается письмом со списком позиций, <b>прототип его показывает и ставит статус в журнал</b>, ' +
-    'отправка пока руками. Ответы возвращаются на шаг 5.</div>');
-};
+  var v = priceValid(r);
+  openModal(
+    '<div class="modal-head"><div><h2>КП по позиции · '+r.n+'</h2>'+
+      '<div class="modal-sub">'+nf0.format(r.q)+' '+r.u+' · товарная группа «'+(r.g||'—')+'»</div></div>'+
+      '<button class="x" data-close aria-label="Закрыть">✕</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="kv" style="margin-bottom:14px">'+
+      '<div><span class="k">Цена в расчёте</span><span class="v">'+(r.price ? f2(r.price)+' ₽/'+r.u : '—')+'</span></div>'+
+      '<div><span class="k">Плановая цена по шаблону</span><span class="v">'+(r.plan ? f2(r.plan)+' ₽/'+r.u : '—')+'</span></div>'+
+      (r.plan && r.price ? '<div><span class="k">Экономия на объекте</span><span class="v">'+
+        f((r.plan - r.price) * r.q)+' ₽</span></div>' : '')+
+      (v ? '<div><span class="k">Срок годности цены</span><span class="v">'+
+        cond('с '+v.from+' до '+v.to, 'срок годности цены в прайсах не задан, взято 30 дней')+'</span></div>' : '')+
+      '</div>'+
+      '<div class="eyebrow">Предложения поставщиков</div>'+
+      '<div class="tw" style="margin-top:6px"><table><thead><tr><th>Поставщик</th><th>Дата ответа</th>'+
+        '<th class="r">Сумма КП, ₽</th><th>Комментарий</th><th></th></tr></thead><tbody>'+
+        (body || '<tr><td colspan="5" style="color:var(--faint)">КП по этой позиции пока нет</td></tr>')+
+        '</tbody></table></div>'+
+      '<div class="note">Файл КП в прототипе не хранится. В боевой версии здесь ссылка на вложение из письма.</div>'+
+    '</div>'+
+    '<div class="modal-foot"><span class="right"><button class="btn" data-close>Закрыть</button>'+
+      '<button class="btn btn-primary" data-close>Взять эту цену</button></span></div>');
+}
 
-views[5] = function(){
-  var rows = [
-    ['Стеклопакет 6М1-16Ar-6И','1 892 м²','1 240','Стеклопакеты','manual'],
-    ['Стекло для зоны ограждения','1 030 м²','','Стекло и ограждения','tender'],
-    ['Вентрешётка, заполнение','228 м²','','Вентрешётки','tender'],
-    ['KM.117.02.AL Т-соединитель','46 шт','','Профиль и комплектующие','missing']
-  ].map(function(r){
-    var rs = reqsFor(r[3]);
-    var got = rs.filter(function(x){ return x.st === 'got'; });
-    var basis = got.length
-      ? 'КП «' + supById(got[0].sup).name + '» от ' + got[0].resp
-      : (rs.filter(function(x){ return x.st === 'sent'; }).length
-          ? 'ждём ответа: ' + rs.filter(function(x){ return x.st === 'sent'; })
-              .map(function(x){ return supById(x.sup).name; }).join(', ')
-          : 'запрос не отправлен');
-    return '<tr><td>'+r[0]+'</td><td class="r num">'+r[1]+'</td>'+
-      '<td class="r"><input type="text" value="'+r[2]+'" aria-label="Цена за единицу"></td>'+
-      '<td style="color:var(--muted)">'+basis+'</td><td>'+pill(r[4])+'</td>'+
-      '<td class="r"><button class="btn" data-req="'+r[3]+'" style="padding:3px 9px;font-size:11.5px">Запросить</button></td></tr>';
-  }).join('');
-  return head('Цены поставщиков',
-    'Полученные КП прикрепляются к объекту, цены вносятся руками. У каждой цены остаётся видно, от кого она и когда получена.',
-    '<button class="btn">Прикрепить КП</button><button class="btn" data-nav="sup">Журнал запросов</button>') +
-  panel('Уточняемые позиции','', '<div class="tw"><table><thead><tr><th>Материал</th><th class="r">Объём</th>'+
-    '<th class="r">Цена за ед., ₽</th><th>Основание</th><th>Источник</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>', true) +
-  panel('Что дал тендер','стеклопакет',
-    '<div class="kv">'+
-    '<div><span class="k">Плановая цена по шаблону</span><span class="v">1 360 ₽/м²</span></div>'+
-    '<div><span class="k">Лучшее предложение из трёх</span><span class="v">1 240 ₽/м²</span></div>'+
-    '<div><span class="k">Экономия на объекте</span><span class="v">227 040 ₽</span></div>'+
-    '</div>');
-};
+/* ==================================================================
+   Шаг 4. Производство
+   ================================================================== */
+views_4 = function(){
+  var k = factor();
+  var rows = '';
+  blocks().forEach(function(b){
+    var bk = kOf(b), c = isCondBlock(b);
+    rows += '<tr class="sub"><td colspan="7">Блок «'+BLOCK_NAMES[b]+'»'+
+      (c ? ' '+condMark('удельные ставки взяты как у встройки, В8') : '')+'</td></tr>';
+    rows += MAN.map(function(r){
+      var sum = manRowSum(r) * bk;
+      return '<tr><td>'+(r.bal ? balName(r.n) : r.n)+'</td>'+
+        '<td class="r num">'+(r.lump != null ? '<span style="color:var(--faint)">'+r.u+'</span>' : f2(r.vol*bk))+'</td>'+
+        '<td class="r num" style="color:var(--faint)">'+(r.price ? f2(r.price) : '—')+'</td>'+
+        '<td class="r">'+(r.lump != null ? '—'
+          : (b === 'vstr'
+             ? '<input type="text" class="'+(r.hand?'':'auto-in')+'" data-man="'+r.k+'" value="'+r.rate+'" aria-label="Ставка изготовления, ₽/м²">'
+             : '<span class="cond" title="условно: та же ставка, что у встройки, В8">'+f2(r.rate)+'</span>'))+'</td>'+
+        '<td class="r num">'+f(sum)+'</td>'+
+        '<td>'+(r.bal ? bal() : pill(r.hand ? 'manual' : 'auto'))+'</td>'+
+        '<td style="color:var(--muted)">'+(r.bal
+            ? 'по строкам не разложено, держит сверку с Догмой'
+            : (r.why || 'прайс изготовления ОТК'))+'</td></tr>';
+    }).join('');
+  });
 
-views[6] = function(){
-  var rows = [
-    ['ВС-36 встроенные, глухая часть','2 220,9 м²','1 344','1 344','auto'],
-    ['Оконный блок A77','546,0 м²','1 944','1 700','manual'],
-    ['Дверной блок AD77','62,0 м²','2 460','2 460','auto'],
-    ['Вентрешётка','228,0 м²','870','870','auto'],
-    ['Ограждение','1 030,0 м²','','520','auto']
-  ].map(function(r){
-    return '<tr><td>'+r[0]+'</td><td class="r num">'+r[1]+'</td>'+
-      '<td class="r num" style="color:var(--faint)">'+r[2]+'</td>'+
-      '<td class="r"><input type="text" value="'+r[3]+'" aria-label="Ставка, ₽/м²"></td><td>'+pill(r[4])+'</td></tr>';
+  var drows = DELIV.map(function(r){
+    return '<tr><td>'+r.n+(r.cond ? ' '+condMark('объём не выгружен, взято по аналогии') : '')+'</td>'+
+      '<td class="r num">'+f2(r.q * k)+' '+r.u+'</td>'+
+      '<td class="r num">'+f2(r.rate)+'</td>'+
+      '<td class="r num">'+f(r.q * r.rate * k)+'</td>'+
+      '<td style="color:var(--muted)">'+r.src+'</td></tr>';
   }).join('');
+
   return head('Производство',
-    'Стоимость изготовления берётся из прайса, согласованного с производством, по типу конструкции и площади. Ставку можно переторговать и поставить свою.',
-    '<button class="btn">Прайс производства · Россия</button>') +
-  cells([['Изготовление, итого','4 255 870 ₽','1 337,95 ₽/м²'],
-         ['Ставок правлено руками','1 из 5','A77: 1 944 → 1 700 ₽/м²'],
-         ['Эффект правки','−133 224 ₽','согласовано с производством']]) +
-  panel('Ставки по типам конструкций','', '<div class="tw"><table><thead><tr><th>Конструкция</th>'+
-    '<th class="r">Площадь</th><th class="r">Прайс</th><th class="r">В расчёте, ₽/м²</th><th>Источник</th></tr></thead>'+
-    '<tbody>'+rows+'</tbody></table></div>', true) +
-  panel('Основание правки','',
-    '<div class="note">Загрузка производства на квартал низкая, при объёме 10 000 м² согласована ставка 1 700 ₽/м². <b>Согласовано: Миша, производство, 01.09.2026.</b></div>');
+    'Стоимость изготовления берётся из прайса ОТК по типу конструкции и площади, отдельно по каждому блоку объекта. Ставку можно переторговать и поставить свою.',
+    '<button class="btn">Прайс изготовления ОТК · 08.09</button>'+
+    '<button class="btn" disabled title="появится в блоке планирования">Загрузка производства</button>') +
+  what('Каждый тип конструкции получает ставку за квадратный метр из прайса ОТК. Ставки по блокам разные: '+
+       'встроенные и навесные конструкции стоят разных денег. Отсюда же берутся объёмы для доставки.') +
+  cells([['Изготовление, итого', f(manTotal()*k)+' ₽', f2(manTotal()*k/mdl().S)+' ₽/м²'],
+         ['Ставок правлено руками', MAN.filter(function(r){ return r.hand; }).length+' из '+MAN.length,
+          'A77: 1 944 → 1 700 ₽/м²'],
+         ['Загрузка ОТК на квартал', cond('62 %','плана загрузки ОТК у нас нет, число условное'),
+          'кнопка плана появится в блоке планирования']]) +
+
+  panel('Ставки по типам конструкций и блокам', f(manTotal()*k)+' ₽',
+    '<div class="tw"><table><thead><tr><th>Конструкция</th><th class="r">Площадь, м²</th><th class="r">Прайс, ₽/м²</th>'+
+    '<th class="r">В расчёте, ₽/м²</th><th class="r">Сумма, ₽</th><th>Состояние</th><th>Основание</th></tr></thead>'+
+    '<tbody>'+rows+'</tbody>'+
+    '<tfoot><tr><td colspan="4">Итого изготовление</td><td class="r num">'+f(manTotal()*k)+'</td><td colspan="2"></td></tr></tfoot>'+
+    '</table></div>', true) +
+
+  panel('Доставка', 'справочно, '+f(delivTotal()*k)+' ₽',
+    '<div class="tw"><table><thead><tr><th>Строка</th><th class="r">Объём</th><th class="r">Ставка, ₽</th>'+
+    '<th class="r">Сумма, ₽</th><th>Источник</th></tr></thead><tbody>'+drows+'</tbody>'+
+    '<tfoot><tr><td colspan="3">Итого доставка</td><td class="r num">'+f(delivTotal()*k)+'</td><td></td></tr></tfoot>'+
+    '</table></div>'+
+    '<div class="note">Объёмы берутся с шага изготовления, а не из общей площади объекта: это те же типы конструкций, что в прайсе ОТК. '+
+    'На Догме доставка сидит внутри блока материалов, поэтому прототип показывает её справочно и второй раз в себестоимость не добавляет. '+
+    'В самом файле объёмы доставки считаются через <b>#REF!</b>, это разбирается с Андреем.</div>', true) +
+
+  panel('Основание правки', '',
+    '<div class="note">Загрузка производства на квартал низкая, при объёме 10 000 м² согласована ставка 1 700 ₽/м². '+
+    '<b>Согласовано: Миша, производство, 01.09.2026.</b></div>'+
+    '<div class="note">Три позиции А112 цены не имеют: ОТК такие окна ещё не изготавливал. Они ушли на шаг «Закупка и тендер» '+
+    'красными строками и вернутся сюда, когда проект уйдёт в ОТК на просчёт.</div>') +
+  hands('Проверить ставки по типам конструкций и, если переторговали, поставить свою с основанием. Объёмы доставки не править: '+
+        'они приходят с этого же шага.') +
+  stepNav();
 };
 
-views[7] = function(){
-  var stages = [['Каркас',30,288],['Заполнение',22,211.2],['Примыкания наружные',15,144],
-                ['Примыкания внутренние',22,211.2],['Сдача СКС',11,105.6]];
-  var bar = '<div class="stagebar">'+stages.map(function(s,i){
+/* ==================================================================
+   Шаг 5. Монтаж
+   ================================================================== */
+views_5 = function(){
+  var k = factor();
+  var rows = '';
+  blocks().forEach(function(b){
+    var bk = kOf(b), c = isCondBlock(b);
+    rows += '<tr class="sub"><td colspan="8">Блок «'+BLOCK_NAMES[b]+'»'+
+      (c ? ' '+condMark('удельные ставки взяты как у встройки, В8') : '')+'</td></tr>';
+    MOUNT.forEach(function(r){
+      var sum = mountRowSum(r) * bk;
+      var ip = ipShare(r), ipSum = sum * ip, zpSum = sum - ipSum;
+      var key = b + '-' + r.k, isOpen = !!state.open[key];
+      rows += '<tr><td><button class="expander" data-open="'+key+'" aria-expanded="'+isOpen+'" '+
+          'aria-label="Этапы работ">'+(isOpen ? '▾' : '▸')+'</button>'+(r.bal ? balName(r.n) : r.n)+'</td>'+
+        '<td class="r num">'+(r.lump != null ? '<span style="color:var(--faint)">'+r.u+'</span>' : f2(r.vol*bk))+'</td>'+
+        '<td class="r">'+(r.lump != null ? '—'
+          : (b === 'vstr'
+             ? '<input type="text" class="'+(r.hand?'':'auto-in')+'" data-mnt="'+r.k+'" value="'+r.rate+'" aria-label="Ставка монтажа, ₽/м²">'
+             : '<span class="cond" title="условно: та же ставка, что у встройки, В8">'+f2(r.rate)+'</span>'))+'</td>'+
+        '<td class="r">'+(b === 'vstr'
+             ? '<input type="text" class="'+(r.ip!=null?'':'auto-in')+'" data-ip="'+r.k+'" value="'+
+               String(Math.round(ip*1000)/10).replace('.',',')+'" aria-label="Процент на ИП">'
+             : '<span style="color:var(--faint)">'+String(Math.round(ip*1000)/10).replace('.',',')+'</span>')+'</td>'+
+        '<td class="r num">'+f(zpSum)+'</td>'+
+        '<td class="r num">'+f(ipSum)+'</td>'+
+        '<td class="r num">'+f(sum)+'</td>'+
+        '<td>'+(r.bal ? bal() : pill(r.ip != null || r.hand ? 'manual' : 'auto'))+'</td></tr>';
+      if (isOpen){
+        var ss = stageSums(sum);
+        rows += MSTAGES.map(function(s, i){
+          return '<tr class="sub"><td>'+s[0]+'</td><td class="r num">'+s[1]+' %</td>'+
+            '<td colspan="4"></td><td class="r num">'+f2(ss[i])+'</td><td></td></tr>';
+        }).join('');
+        rows += '<tr class="sub"><td>Сумма этапов</td><td colspan="5"></td>'+
+          '<td class="r num">'+f2(ss.reduce(function(a,x){ return a+x; },0))+'</td><td></td></tr>';
+      }
+    });
+  });
+
+  var bar = '<div class="stagebar">'+MSTAGES.map(function(s,i){
     return '<span style="flex:'+s[1]+';background:var(--ramp-'+(i+1)+')">'+s[1]+' %</span>';
   }).join('')+'</div>';
-  var srows = stages.map(function(s){
-    return '<tr><td>'+s[0]+'</td><td class="r num">'+s[1]+' %</td><td class="r num">'+nf2.format(s[2])+'</td>'+
-      '<td class="r num">'+f(s[2]*S)+'</td></tr>';
-  }).join('');
+
   return head('Монтаж',
-    'Ставка за квадратный метр по системе, разбитая по этапам работ. По этой же разбивке потом закрываются промежуточные работы с заказчиком и с монтажниками.',
-    '<button class="btn">Прайс монтажа</button><button class="btn">Запросить у монтажников</button>') +
-  cells([['Монтаж, итого','9 459 756 ₽','2 973,93 ₽/м²'],
-         ['Ставка WS','960 ₽/м²','базовая 1 050, переторговано'],
-         ['Своими силами','69,4 %','остальное аутсорсинг']]) +
-  panel('Процентовка этапов','сумма 100 %', bar +
-    '<div class="tw" style="margin-top:12px"><table><thead><tr><th>Этап</th><th class="r">Доля</th>'+
-    '<th class="r">₽/м²</th><th class="r">Сумма, ₽</th></tr></thead><tbody>'+srows+'</tbody></table></div>') +
-  panel('Условия оплаты','отдельный шаг расчёта',
-    '<div class="grid2">'+
-    '<div><div class="eyebrow">Форма расчёта с бригадами</div>'+
-      '<div class="seg" style="margin-top:8px" role="group">'+
-      '<button aria-pressed="true">Безнал</button><button aria-pressed="false">ИП</button>'+
-      '<button aria-pressed="false">Наличные</button><button aria-pressed="false">Аутсорсинг</button></div></div>'+
-    '<div class="kv" style="align-self:end">'+
-      '<div><span class="k">Зарплата, свои бригады</span><span class="v">5 248 467 ₽</span></div>'+
-      '<div><span class="k">Аутсорсинг</span><span class="v">2 461 245 ₽</span></div>'+
-      '<div><span class="k">Сдача СКС, дольщикам</span><span class="v">636 178 ₽</span></div>'+
-    '</div></div>');
+    'Ставка за квадратный метр по типу конструкции, разделённая на зарплатный проект и ИП. По этапам работ потом закрываются промежуточные работы с заказчиком и с монтажниками.',
+    '<button class="btn">Прайс монтажа · 08.09</button><button class="btn">Запросить у монтажников</button>') +
+  what('Каждая строка это тип конструкции: объём, ставка целиком, доля на ИП и две суммы — на зарплатный проект и на ИП. '+
+       'Стрелка слева раскрывает этапы работ: каркас, заполнения, примыкания, створки, сдача СКС. Сумма этапов равна сумме строки.') +
+  cells([['Монтаж, итого', f(mountTotal()*k)+' ₽', f2(mountTotal()*k/mdl().S)+' ₽/м²'],
+         ['На зарплатный проект', f(mountZp()*k)+' ₽', 'по умолчанию '+pcs(P('payroll_share')*100)+' от суммы'],
+         ['На ИП', f(mountIp()*k)+' ₽', 'доля на ИП переопределяется в строке']]) +
+
+  panel('Ставки по типам конструкций', f(mountTotal()*k)+' ₽',
+    '<div class="tw"><table><thead><tr><th>Конструкция</th><th class="r">Объём, м²</th><th class="r">Ставка, ₽/м²</th>'+
+    '<th class="r">На ИП, %</th><th class="r">Сумма ЗП, ₽</th><th class="r">Сумма ИП, ₽</th>'+
+    '<th class="r">Итого, ₽</th><th>Состояние</th></tr></thead><tbody>'+rows+'</tbody>'+
+    '<tfoot><tr><td colspan="4">Итого монтаж</td><td class="r num">'+f(mountZp()*k)+'</td>'+
+    '<td class="r num">'+f(mountIp()*k)+'</td><td class="r num">'+f(mountTotal()*k)+'</td><td></td></tr></tfoot>'+
+    '</table></div>', true) +
+
+  panel('Процентовка этапов', 'сумма 100 %', bar +
+    '<div class="note">Раскладка одинаковая для всех типов конструкций. Андрей подтвердил, что справочник по типу конструкции годится '+
+    'как источник раскладки по месяцам для финансового плана. Разложить каждый тип по своим процентам — решение Павла, конфликт К2.</div>') +
+
+  panel('Легенда шага', '',
+    '<div class="legend" style="gap:20px">'+
+    '<span><i class="swatch" style="background:var(--p-manual)"></i>охра: поле вводится руками</span>'+
+    '<span><i class="swatch" style="background:var(--line-strong)"></i>серое: считается само, править нельзя</span>'+
+    '<span><i class="swatch" style="background:var(--p-auto)"></i>зелёное: пришло из справочника</span>'+
+    '</div>'+
+    '<div class="note">Правленое поле остаётся охряным до конца расчёта: по цвету видно, где вмешались руками. '+
+    'Доля на зарплатный проект по умолчанию берётся из параметров расчёта и переопределяется в строке.</div>') +
+  hands('Поставить ставку по типу конструкции и, если нужно, долю на ИП по этой строке. Раскрыть этапы и проверить, '+
+        'что раскладка совпадает с тем, как будут закрываться работы.') +
+  stepNav();
 };
 
-views[8] = function(){
-  return head('Страна и налоги',
-    'Один переключатель меняет ставку НДС, налог на прибыль, курс и прайсы производства и монтажа.',
-    '') +
-  panel('Страна объекта','',
-    '<div class="seg" role="group"><button aria-pressed="true">Россия</button><button aria-pressed="false">Узбекистан</button></div>'+
-    '<div class="grid2" style="margin-top:16px">'+
-    '<div class="kv"><div><span class="k">НДС</span><span class="v">22 %</span></div>'+
-      '<div><span class="k">Налог на прибыль</span><span class="v">25 %</span></div>'+
-      '<div><span class="k">Надбавка на материалы</span><span class="v">нет</span></div></div>'+
-    '<div class="kv"><div><span class="k">Курс сум / ₽</span><span class="v">160</span></div>'+
-      '<div><span class="k">Курс сум / $</span><span class="v">12 500</span></div>'+
-      '<div><span class="k">Прайсы производства и монтажа</span><span class="v">российские</span></div></div>'+
-    '</div>') +
-  panel('Что меняется в узбекском варианте','',
-    '<div class="note">НДС 12 %, себестоимость материалов растёт на 12 % кроме категорий Монтаж-ММ, Примыкание, Заполнение и РМ, монтаж считается в долларах по курсу из шапки, производство и монтаж берутся из отдельных узбекских прайсов. <b>Надбавка привязана к ставке НДС, а не зашита числом</b> — если ставка станет 13 %, расчёт не сломается.</div>');
-};
+/* ==================================================================
+   Шаг 6. Статьи затрат
+   ================================================================== */
+var REQ_LBL = {mandatory:['p-auto','обязательная'], choose_one:['p-tender','одна из группы'],
+               optional:['p-manual','по усмотрению']};
+var SUPPLY_DATE = '08.09.2026';
+var PRICE_DATE = '03.09.2026';
+var QUAR6 = [
+  {n:'Автокраны 28 и 40 м', v:'3 625 и 4 312 ₽ «за смену»', st:'auto',
+   addr:'похоже на часовую ставку, F18 · Цены на услуги!F15:F17',
+   why:'при умножении на восемь дают 29 000 и 34 500, а автокран 18 м стоит 32 200 за смену'},
+  {n:'Транспортные расходы и доставка', v:'объёмы через #REF!', st:'manual',
+   addr:'#REF! в объёмах доставки, F15 · ПРАЙС_доставка!G12:G23',
+   why:'пятнадцать строк считают количество через оборванную ссылку, итог даёт #DIV/0!'}
+];
 
-views[9] = function(){
-  var rows = ARTICLES.map(function(a,i){
-    return '<label class="chk'+(a[4]?' locked':'')+'">'+
-      '<input type="checkbox"'+(a[3]?' checked':'')+(a[4]?' disabled':'')+' data-amt="'+a[2]+'">'+
-      '<span class="body"><span class="nm">'+a[0]+
-        (a[4]?' <span class="pill plain p-auto" style="margin-left:6px">обязательная</span>':'')+'</span>'+
-      (a[1]?'<span class="sub">'+a[1]+'</span>':'')+'</span>'+
-      '<span class="amt">'+(a[2]?f(a[2])+' ₽':'—')+'</span></label>';
+function driftCell(a){
+  if (!a.supply || !a.p || a.p.price == null) return '';
+  var own = a.p.price, sup = a.supply.price;
+  if (Math.abs(own - sup) < 0.5)
+    return '<div class="field-note">в прайсе от '+PRICE_DATE+' и у снабжения от '+a.supply.date+' одинаково: '+f(own)+' ₽</div>';
+  return '<div class="drift">в прайсе от '+PRICE_DATE+' <b>'+f(own)+' ₽</b> · у снабжения от '+a.supply.date+
+    ' <b>'+f(sup)+' ₽</b> · расхождение '+f(sup-own)+' ₽</div>'+
+    '<div class="field-note">'+a.supply.who+'</div>';
+}
+
+views_6 = function(){
+  var k = factor();
+  var rows = ARTICLES.map(function(a){
+    var rl = REQ_LBL[a.req];
+    var rec = artRec(a), acc = artAcc(a);
+    var inOth = a.dir === OTH;
+    return '<tr><td>'+
+        '<label class="chk" style="padding:0;border:0">'+
+        '<input type="checkbox" data-art="'+a.k+'"'+(a.on?' checked':'')+
+          (a.req === 'mandatory' ? ' disabled' : '')+'>'+
+        '<span class="body"><span class="nm">'+a.n+(a.cond ? ' '+condMark('сумма условная, статья в прототипе не разложена') : '')+'</span>'+
+        (a.note ? '<span class="sub">'+a.note+'</span>' : '')+
+        (a.src ? '<span class="sub mono">'+a.src+'</span>' : '')+
+        driftCell(a)+
+        '</span></label></td>'+
+      '<td><span class="pill '+rl[0]+'">'+rl[1]+'</span>'+
+        (a.grp ? '<div class="field-note">'+a.grp+'</div>' : '')+
+        (a.auto ? '<div class="field-note">считается автоматом</div>' : '')+'</td>'+
+      '<td class="r num" style="color:var(--faint)">'+f(rec*k)+'</td>'+
+      '<td class="r"><input type="text" class="'+(a.accEdited?'':'auto-in')+'" data-acc="'+a.k+
+        '" value="'+acc+'" aria-label="Принято, ₽"></td>'+
+      '<td style="color:var(--muted)">'+a.dir+(inOth ? '' : '<div class="field-note">в прочие расходы не добавляется</div>')+'</td>'+
+      '<td>'+pill(a.on ? (a.accEdited ? 'manual' : 'auto') : 'missing')+'</td></tr>';
   }).join('');
+
+  var qrows = QUAR6.map(function(q){
+    return '<tr><td>'+q.n+'</td><td class="r num">'+q.v+'</td>'+
+      '<td style="color:var(--muted)">'+q.why+'</td><td>'+quar(q.st, q.addr)+'</td></tr>';
+  }).join('');
+
+  var on = ARTICLES.filter(function(a){ return a.on; }).length;
+
   return head('Статьи затрат',
-    'План статей с плановыми расценками. Обязательные включены всегда, остальные включаются под объект. Плановую сумму нужно либо подтвердить, либо исправить.',
-    '<button class="btn">Добавить статью</button>') +
-  cells([['Включено','8 из 12','5 обязательных'],
-         ['Прочие расходы, итого','1 282 005 ₽','403,03 ₽/м²'],
-         ['Подтверждено','3 из 8','остальные в плановом режиме']]) +
-  panel('План статей','', rows) +
-  panel('Почему обязательные нельзя выключить','',
-    '<div class="note">Объект на 10 млн может идти шесть месяцев, и пять туалетных кабинок, которые просто стоят, съедают всю прибыль. <b>Статьи, без которых объект физически не работает, включены по умолчанию</b> и снимаются только с обоснованием.</div>');
+    'План статей с рекомендуемой суммой. Система предлагает, расчётчик подтверждает или правит и оставляет примечание с обоснованием.',
+    '<button class="btn" data-add-art>Добавить строку</button>'+
+    '<button class="btn" data-supply>Справочник снабжения · '+SUPPLY_DATE+'</button>') +
+  what('Обязательность бывает трёх видов: обязательная статья включена всегда, из группы выбирается одна, '+
+       'остальные включаются под объект. Часть статей считается автоматом от уже известного: манипулятор от площади заполнений, '+
+       'мусор от площади, бытовки от срока монтажа, ППР одной ставкой на объект. '+
+       'Все формулы разобраны на параметры строки, а не зашиты числами в код.') +
+  cells([['Включено', on+' из '+ARTICLES.length, ARTICLES.filter(function(a){ return a.req==='mandatory'; }).length+' обязательных'],
+         ['Прочие расходы, итого', f(othTotal()*k)+' ₽', f2(othTotal()*k/mdl().S)+' ₽/м²'],
+         ['Правлено руками', ARTICLES.filter(function(a){ return a.accEdited; }).length+' из '+on,
+          'остальные в рекомендованном виде']]) +
+
+  panel('План статей', 'принято = то, что уходит в бюджет',
+    '<div class="tw"><table><thead><tr><th>Статья</th><th>Обязательность</th><th class="r">Рекомендовано, ₽</th>'+
+    '<th class="r">Принято, ₽</th><th>Категория ДИР</th><th>Состояние</th></tr></thead><tbody>'+rows+'</tbody>'+
+    '<tfoot><tr><td colspan="3">Прочие расходы, в себестоимость</td>'+
+    '<td class="r num">'+f(othTotal()*k)+'</td><td colspan="2"></td></tr></tfoot>'+
+    '</table></div>', true) +
+
+  panel('Аналитика по заказчику', state.form.customer,
+    '<div class="grid2"><div>'+
+    '<div class="field-lbl">Гарантийное обслуживание по этому заказчику</div>'+
+    '<input type="text" class="wide auto-in" data-analytics value="" placeholder="—" aria-label="Аналитика по заказчику">'+
+    '<div class="field-note">По этому клиенту данных нет: истории по закрытым объектам мы пока не ведём. '+
+    'Поле справочное, в расчёт не идёт.</div></div></div>') +
+
+  panel('Карантин: данные есть, но им нельзя верить', String(QUAR6.length)+' строки',
+    '<div class="tw"><table><thead><tr><th>Строка</th><th class="r">Что в файле</th><th>Почему нельзя считать</th>'+
+    '<th>Состояние</th></tr></thead><tbody>'+qrows+'</tbody></table></div>', true) +
+
+  panel('Почему обязательные нельзя выключить', '',
+    '<div class="note">Объект на 10 млн может идти шесть месяцев, и пять туалетных кабинок, которые просто стоят, съедают всю прибыль. '+
+    '<b>Статьи, без которых объект физически не работает, включены по умолчанию</b> и снимаются только с обоснованием.</div>'+
+    '<div class="note">Цены техники берутся из справочника снабжения с датой, а не хранятся копией в прайсе: '+
+    'прайс прочих расходов от '+PRICE_DATE+' уже отстаёт от снабжения от '+SUPPLY_DATE+'. Расхождение показано в строке.</div>') +
+  hands('Пройти по статьям сверху вниз: включить нужные, подтвердить или исправить сумму, оставить примечание. '+
+        'Если статьи не хватает, добавить строку.') +
+  stepNav();
 };
 
-views[10] = function(){
-  var m = state.m, r = calc(m);
-  var total = C;
-  var bar = '<div class="stagebar" style="height:30px">'+COST_GROUPS.map(function(g){
+/* ==================================================================
+   Шаг 7. Тендерный бюджет
+   ================================================================== */
+function dirRows(form){
+  var k = factor();
+  var out = [
+    ['Материалы', matTotal()*k, 'НДС'],
+    ['Изготовление', manTotal()*k, 'НДС'],
+    ['Проектирование и геодезия', PRJ_VSTR*k, '']
+  ];
+  if (form === 'new'){
+    out.push(['Монтаж, зарплатный проект (ЗП)', mountZp()*k, '']);
+    out.push(['Монтаж, ИП', mountIp()*k, '']);
+  } else {
+    out.push(['Монтаж, зарплата и аутсорсинг', mountTotal()*k, '']);
+  }
+  out.push(['Прочие расходы', (othTotal()+fundsTotal())*k, 'НДС']);
+  return out;
+}
+
+views_7 = function(){
+  var k = factor();
+  var M = mdl(), r = calc(state.m), fm = floorM(), V = vatRate();
+  var groups = costGroups(), total = M.C;
+
+  var bar = '<div class="stagebar" style="height:30px">'+groups.map(function(g){
     var share = g[1]/total*100;
     return '<span style="flex:'+g[1]+';background:'+g[2]+'" title="'+g[0]+'">'+
       (share >= 6 ? nf0.format(Math.round(share))+' %' : '')+'</span>';
   }).join('')+'</div>';
-  var grows = COST_GROUPS.map(function(g){
+  var grows = groups.map(function(g){
     return '<tr><td>'+g[0]+'</td><td class="r num">'+f(g[1])+'</td>'+
-      '<td class="r num">'+nf2.format(g[1]/S)+'</td>'+
-      '<td class="r num" style="color:var(--muted)">'+nf2.format(g[1]/total*100)+' %</td></tr>';
+      '<td class="r num">'+f2(g[1]/M.S)+'</td>'+
+      '<td class="r num" style="color:var(--muted)">'+f2(g[1]/total*100)+' %</td></tr>';
   }).join('');
+
+  var dr = dirRows(state.dirForm).map(function(d){
+    return '<tr><td>'+d[0]+'</td><td class="r num">'+f(d[1])+'</td>'+
+      '<td class="mono" style="font-size:11px;color:var(--faint)">'+d[2]+'</td></tr>';
+  }).join('');
+
   var dir = [
-    ['Итого расходы', C, false],
-    ['Наценка ' + pc(m), r.income, false],
+    ['Итого расходы', M.C, false],
+    ['Наценка ' + pc(state.m), r.income, false],
     ['Цена контракта', r.K, true],
     ['Накладные 10 %', -r.ovh, false],
     ['НДС к уплате', -r.vatOut, false],
@@ -763,26 +1515,105 @@ views[10] = function(){
   ].map(function(d){
     return '<tr'+(d[2]?' style="font-weight:600"':'')+'><td'+(d[2]?'':' style="color:var(--muted);padding-left:22px"')+'>'+d[0]+'</td>'+
       '<td class="r num"'+(d[1]<0?' style="color:var(--muted)"':'')+'>'+f(d[1])+'</td>'+
-      '<td class="r num" style="color:var(--muted)">'+nf2.format(d[1]/S)+'</td></tr>';
+      '<td class="r num" style="color:var(--muted)">'+f2(d[1]/M.S)+'</td></tr>';
   }).join('');
+
+  var taxes = fold('Налоги и курсы', 'справочник, только для чтения',
+    '<div class="grid2">'+
+    '<div class="kv"><div><span class="k">Страна объекта</span><span class="v">'+state.form.country+'</span></div>'+
+      '<div><span class="k">НДС</span><span class="v">'+pcs(V*100)+'</span></div>'+
+      '<div><span class="k">Налог на прибыль</span><span class="v">25 %</span></div>'+
+      '<div><span class="k">Надбавка на материалы</span><span class="v">'+
+        (state.form.country === 'Узбекистан' ? 'привязана к ставке НДС' : 'нет')+'</span></div></div>'+
+    '<div class="kv"><div><span class="k">Курс сум / ₽</span><span class="v">160</span></div>'+
+      '<div><span class="k">Курс сум / $</span><span class="v">12 500</span></div>'+
+      '<div><span class="k">Прайсы производства и монтажа</span><span class="v">'+
+        (state.form.country === 'Узбекистан' ? 'узбекские' : 'российские')+'</span></div></div>'+
+    '</div>'+
+    '<div class="note">Ставки живут в справочнике налогов, здесь их видно и нельзя править. Страна выбирается на шаге 1. '+
+    'Ставка НДС берётся из параметра расчёта, поэтому смена 22 на 13 расчёт не сломает.</div>');
 
   return head('Тендерный бюджет',
     'Итог всех шагов. Наценка крутится здесь же: видно, до какой цены можно падать в торге и где живые деньги на конец стройки уходят в минус.',
-    '<button class="btn-primary btn">Зафиксировать как тендерный</button><button class="btn">Выгрузить в Excel</button>') +
-  cells([['Цена контракта', f(r.K)+' ₽', nf2.format(r.K/S)+' ₽/м²'],
+    '<button class="btn btn-primary">Зафиксировать как тендерный</button>'+
+    '<button class="btn" data-old-form>Экспорт для учёта в старой форме</button>') +
+  what('Свод ДИР собирается из шагов 2–6. В новой форме строка зарплаты делится на две: зарплатный проект и ИП. '+
+       'Сумма двух строк равна прежней одной, итоги ниже не меняются. Учётные системы читают старую форму, поэтому она остаётся.') +
+  cells([['Цена контракта', f(r.K)+' ₽', f2(r.K/M.S)+' ₽/м²'],
          ['Чистая прибыль', f(r.profit)+' ₽', pc(r.profit/r.K)+' от контракта'],
          ['Живые деньги', f(r.cf)+' ₽', pc(r.cf/r.K)+' от контракта']]) +
-  panel('Структура себестоимости', f(C)+' ₽ · '+nf2.format(C/S)+' ₽/м²', bar +
+
+  panel('Свод ДИР', state.dirForm === 'new' ? 'новая форма, две строки зарплаты' : 'старая форма, одна строка',
+    '<div class="seg sm" role="group" style="margin-bottom:12px">'+
+      '<button data-dir="new" aria-pressed="'+(state.dirForm==='new')+'">новая форма</button>'+
+      '<button data-dir="old" aria-pressed="'+(state.dirForm==='old')+'">старая форма</button>'+
+    '</div>'+
+    '<div class="tw"><table><thead><tr><th>Строка свода</th><th class="r">Сумма, ₽</th><th>Метка</th></tr></thead>'+
+    '<tbody>'+dr+'</tbody>'+
+    '<tfoot><tr><td>Итого расходы</td><td class="r num">'+f(M.C)+'</td><td></td></tr></tfoot></table></div>'+
+    '<div class="note">С части ИП НДС 22 % платят сверху, а ставка зарплатного проекта его уже содержит. '+
+    '<b>В расчёт прототипа это не внесено</b>: бюджета в новой форме у нас нет, сверяться не с чем. Вопрос Q21.</div>') +
+
+  panel('Маркетинг и привлечённые средства', 'процент из параметров расчёта',
+    '<div class="grid3" style="background:none;gap:16px">'+
+    '<div><div class="field-lbl">Маркетинг, ₽</div>'+
+      '<input type="text" class="'+(state.marketing?'':'auto-in')+'" data-mk value="'+state.marketing+'" aria-label="Маркетинг, ₽">'+
+      '<div class="field-note">вводится руками, по умолчанию ноль</div></div>'+
+    '<div><div class="field-lbl">Привлечённые средства, ₽</div>'+
+      '<input type="text" class="'+(state.funds?'':'auto-in')+'" data-fn value="'+state.funds+'" aria-label="Привлечённые средства, ₽">'+
+      '<div class="field-note">вводится руками, по умолчанию ноль</div></div>'+
+    '<div><div class="field-lbl">Расходы на получение средств</div>'+
+      '<div class="sum-big" style="font-size:20px;margin-top:4px">'+f((state.marketing+state.funds)*P('marketing_rate')*k)+' ₽</div>'+
+      '<div class="field-note">'+cond(pcs(P('marketing_rate')*100), 'Андрей назвал 40–45 %, точное число у Владимира Сергеевича, В5')+
+      ' от суммы двух полей, в базу 57,6 % эти строки не входят</div></div>'+
+    '</div>') +
+
+  taxes +
+
+  panel('Структура себестоимости', f(M.C)+' ₽ · '+f2(M.C/M.S)+' ₽/м²', bar +
     '<div class="tw" style="margin-top:12px"><table><thead><tr><th>Группа</th><th class="r">Сумма, ₽</th>'+
     '<th class="r">₽/м²</th><th class="r">Доля</th></tr></thead><tbody>'+grows+'</tbody></table></div>') +
+
   panel('Расчёт до живых денег','', '<div class="tw"><table><thead><tr><th>Строка</th>'+
     '<th class="r">Сумма, ₽</th><th class="r">₽/м²</th></tr></thead><tbody>'+dir+'</tbody></table></div>', true) +
-  panel('Вариант «дно»','наценка '+pc(floorM),
-    '<div class="note">Ниже наценки <b>'+pc(floorM)+'</b> живые деньги на конец стройки уходят в минус: удержание 5 % заморожено на год, и своих денег в объект придётся доложить. Минимальная цена контракта, с которой можно идти в торг, — <b>'+f(C*(1+floorM))+' ₽</b>, это '+nf2.format(C*(1+floorM)/S)+' ₽/м².</div>');
+
+  panel('Вариант «дно»','наценка '+pc(fm),
+    '<div class="note">Ниже наценки <b>'+pc(fm)+'</b> живые деньги на конец стройки уходят в минус: удержание 5 % заморожено на год, '+
+    'и своих денег в объект придётся доложить. Минимальная цена контракта, с которой можно идти в торг, — <b>'+
+    f(M.C*(1+fm))+' ₽</b>, это '+f2(M.C*(1+fm)/M.S)+' ₽/м².</div>'+
+    (state.m < fm
+      ? '<div class="warn"><b>Зачем нам завтрашний день?</b> Сейчас наценка '+pc(state.m)+', это ниже дна. '+
+        'Объект уходит в минус на '+f(-r.cf)+' ₽: '+
+        'подписывать по такой цене нельзя без отдельного решения.</div>'
+      : '<div class="ok-line">Запас до дна '+pc(state.m-fm)+' наценки.</div>')) +
+  hands('Покрутить наценку и посмотреть, где живые деньги уходят в минус. Ввести маркетинг и привлечённые средства, если они есть. '+
+        'Налоги здесь не правятся, они в справочнике.') +
+  stepNav();
 };
 
-/* ---- справочник поставщиков ---- */
-var TODAY = '07.09.2026';
+function oldFormModal(){
+  var k = factor(), M = mdl();
+  var rows = dirRows('old').map(function(d){
+    return '<tr><td>'+d[0]+'</td><td class="r num">'+f(d[1])+'</td></tr>';
+  }).join('');
+  openModal(
+    '<div class="modal-head"><div><h2>Выгрузка свода ДИР в старой форме</h2>'+
+      '<div class="modal-sub">одна строка зарплаты, как читают учётные системы</div></div>'+
+      '<button class="x" data-close aria-label="Закрыть">✕</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="tw"><table><thead><tr><th>Строка свода</th><th class="r">Сумма, ₽</th></tr></thead>'+
+      '<tbody>'+rows+'</tbody><tfoot><tr><td>Итого расходы</td><td class="r num">'+f(M.C)+'</td></tr></tfoot></table></div>'+
+      '<div class="note">Сумма двух строк новой формы (ЗП '+f(mountZp()*k)+' ₽ и ИП '+f(mountIp()*k)+' ₽) равна одной строке старой формы '+
+      '('+f(mountTotal()*k)+' ₽). Итоги ниже не меняются.</div>'+
+      '<div class="note"><b>Файл прототип не формирует.</b> Здесь показано, что именно уйдёт в выгрузку, когда она появится.</div>'+
+    '</div>'+
+    '<div class="modal-foot"><span class="right"><button class="btn" data-close>Закрыть</button></span></div>');
+}
+
+/* ==================================================================
+   Справочник поставщиков и журнал запросов
+   ================================================================== */
+var TODAY = '09.09.2026';
 
 var GROUPS = ['Стеклопакеты','Стекло и ограждения','Вентрешётки',
               'Профиль и комплектующие','Метизы и крепёж','Герметики и клеи'];
@@ -813,31 +1644,48 @@ var SUPPLIERS = [
   {id:'s6', name:'Ташкент Гласс', geo:'Узбекистан, Ташкент', resp:'5 дней',
    groups:['Стеклопакеты','Стекло и ограждения'],
    terms:'цены в долларах, предоплата 50 %, для узбекских объектов',
-   contacts:[{n:'Азиз Рахимов', r:'коммерческий директор', p:'+998 90 123-45-67', m:'a.rahimov@tashglass.uz', tg:'@tashglass'}]}
+   contacts:[{n:'Азиз Рахимов', r:'коммерческий директор', p:'+998 90 123-45-67', m:'a.rahimov@tashglass.uz', tg:'@tashglass'}]},
+  {id:'s7', name:'ИП Ярметов', geo:'Краснодар', resp:'1 день',
+   groups:['Техника и услуги'],
+   terms:'аренда манипулятора, оплата по рейсам, без НДС',
+   contacts:[{n:'Рустам Ярметов', r:'владелец', p:'+7 918 300-21-14', m:'yarmetov.kran@mail.ru', tg:''}]},
+  {id:'s8', name:'Мусорок', geo:'Краснодар', resp:'2 дня',
+   groups:['Техника и услуги'],
+   terms:'вывоз мусора, пухто 27 м³, договор на объект',
+   contacts:[{n:'Игорь Панов', r:'логистика', p:'+7 861 244-90-05', m:'zayavka@musorok.ru', tg:''}]},
+  {id:'s9', name:'ТД Биоэкология', geo:'Краснодар', resp:'2 дня',
+   groups:['Техника и услуги'],
+   terms:'туалетные кабинки, аренда плюс обслуживание четыре раза в месяц',
+   contacts:[{n:'Марина Соловьёва', r:'отдел аренды', p:'+7 861 210-33-72', m:'arenda@bioeco23.ru', tg:''}]}
 ];
 function supById(id){ for(var i=0;i<SUPPLIERS.length;i++) if(SUPPLIERS[i].id===id) return SUPPLIERS[i]; }
 function supsFor(g){ return SUPPLIERS.filter(function(s){ return s.groups.indexOf(g) >= 0; }); }
 
-/* позиции, которые уходят в запрос, по товарным группам */
 var REQ_ITEMS = {
   'Стеклопакеты':[['СП 6М1-16Ar-6И','Стеклопакет однокамерный, зона витража',1892,'м²']],
   'Стекло и ограждения':[['—','Стекло закалённое, триплекс, зона ограждения',1030,'м²']],
   'Вентрешётки':[['—','Вентиляционная решётка, заполнение',228,'м²']],
   'Профиль и комплектующие':[['KM.117.02.AL','Т-соединитель',46,'шт'],
-                             ['WS.03.009','Кронштейн стальной',120,'шт']],
+                             ['—','Рама оконная А112',38,'шт'],
+                             ['—','А112, створка верхнеподвесная с вклейкой',24,'шт'],
+                             ['—','А112, створка параллельно-отставная с вклейкой',12,'шт']],
   'Метизы и крепёж':[['—','Анкер клиновой 10×92',4200,'шт'],['—','Саморез 5,5×25 нерж.',18600,'шт']],
-  'Герметики и клеи':[['—','Герметик силиконовый нейтральный',640,'шт']]
+  'Герметики и клеи':[['—','Герметик силиконовый нейтральный',640,'шт']],
+  'Техника и услуги':[['—','Аренда манипулятора, рейс',14,'рейс'],
+                      ['—','Вывоз мусора, контейнер в месяц',3,'мес'],
+                      ['—','Туалетная кабинка, аренда с обслуживанием',3,'мес']]
 };
 
-/* журнал запросов */
 var REQUESTS = [
-  {id:1, date:'28.08.2026', g:'Стеклопакеты', sup:'s1', st:'got',  sum:2635092, resp:'30.08.2026', note:'лучшая цена, 1 240 ₽/м²'},
+  {id:1, date:'28.08.2026', g:'Стеклопакеты', sup:'s1', st:'got',  sum:2346080, resp:'30.08.2026', note:'лучшая цена, 1 240 ₽/м²'},
   {id:2, date:'28.08.2026', g:'Стеклопакеты', sup:'s2', st:'got',  sum:2748000, resp:'31.08.2026', note:'1 452 ₽/м²'},
   {id:3, date:'28.08.2026', g:'Стеклопакеты', sup:'s3', st:'no',   sum:null,    resp:'29.08.2026', note:'нет свободных мощностей до декабря'},
   {id:4, date:'29.08.2026', g:'Стекло и ограждения', sup:'s1', st:'sent', sum:null, resp:'', note:'чертёж отправлен 29.08'},
   {id:5, date:'29.08.2026', g:'Стекло и ограждения', sup:'s2', st:'sent', sum:null, resp:'', note:'чертёж отправлен 29.08'},
   {id:6, date:'29.08.2026', g:'Вентрешётки', sup:'s3', st:'sent', sum:null, resp:'', note:''},
-  {id:7, date:'01.09.2026', g:'Профиль и комплектующие', sup:'s4', st:'draft', sum:null, resp:'', note:'Т-соединитель, в прайсе цены нет'}
+  {id:7, date:'01.09.2026', g:'Профиль и комплектующие', sup:'s4', st:'draft', sum:null, resp:'', note:'Т-соединитель и три позиции А112, цены нет'},
+  {id:8, date:'08.09.2026', g:'Техника и услуги', sup:'s7', st:'got', sum:22000, resp:'08.09.2026', note:'22 000 за рейс без НДС, прайс прочих расходов отстаёт'},
+  {id:9, date:'08.09.2026', g:'Техника и услуги', sup:'s8', st:'got', sum:39990, resp:'08.09.2026', note:'вывоз мусора 39 990, было 35 990'}
 ];
 var reqSeq = 100;
 var REQ_ST = {draft:['p-manual','черновик'], sent:['p-tender','отправлен'],
@@ -845,7 +1693,6 @@ var REQ_ST = {draft:['p-manual','черновик'], sent:['p-tender','отпр�
 function reqPill(k){ var p = REQ_ST[k]; return '<span class="pill '+p[0]+'">'+p[1]+'</span>'; }
 function reqsFor(g){ return REQUESTS.filter(function(r){ return r.g === g; }); }
 
-/* текст письма */
 function letterText(g){
   var items = REQ_ITEMS[g] || [];
   var lines = items.map(function(it){
@@ -856,10 +1703,9 @@ function letterText(g){
     'Товарная группа: ' + g + '.\n\n' + lines + '\n\n' +
     'Просим указать цену за единицу с НДС, срок изготовления и поставки, условия оплаты.\n' +
     'Ответ нужен до 12.09.2026, срок поставки на объект — до 15.11.2026.\n\n' +
-    'С уважением,\nГруздев И., расчётный отдел';
+    'С уважением,\n' + state.form.calcer + ', расчётный отдел';
 }
 
-/* модальное окно */
 function openModal(html){
   var ov = document.getElementById('overlay');
   ov.innerHTML = '<div class="modal" role="dialog" aria-modal="true">' + html + '</div>';
@@ -868,6 +1714,44 @@ function openModal(html){
 function closeModal(){
   var ov = document.getElementById('overlay');
   ov.hidden = true; ov.innerHTML = '';
+}
+
+function passportModal(){
+  var sheets = [
+    ['ВХ', 62, 'справочник заполнений, ключ B'],
+    ['ВТ', 48, 'типы конструкций, ключ C'],
+    ['ОЗМ', 45, 'позиции выгрузки LogiKal'],
+    ['Захватки', 13, 'деление фасада, раскрой по захваткам']
+  ].map(function(s){
+    return '<tr><td>'+s[0]+'</td><td class="r num">'+s[1]+'</td><td style="color:var(--muted)">'+s[2]+'</td></tr>';
+  }).join('');
+  var first = [
+    ['WS.01.206-3','Стойка 106 мм, RAL 2 гр. с оклейкой','3 810 пог. м','распозналось'],
+    ['WS.01.255-3','Ригель 55 мм, RAL 2 гр. с оклейкой','4 836 пог. м','распозналось'],
+    ['WS.03.009','Кронштейн стальной','120 шт','суффикс покраски −1'],
+    ['KM.117.02.AL','Т-соединитель','46 шт','нет цены в прайсе'],
+    ['—','Вентрешётка, заполнение','228 м²','нет артикула']
+  ].map(function(r){
+    var ok = r[3] === 'распозналось';
+    return '<tr><td class="art">'+r[0]+'</td><td>'+r[1]+'</td><td class="r num">'+r[2]+'</td>'+
+      '<td>'+pill(ok ? 'auto' : 'missing')+' <span style="color:var(--muted)">'+r[3]+'</span></td></tr>';
+  }).join('');
+  openModal(
+    '<div class="modal-head"><div><h2>Паспорт файла ОЗМ</h2>'+
+      '<div class="modal-sub">ОЗМ_Догма_сек1-3.xlsx · выгрузка LogiKal от 26.08.2026 · 1,4 МБ</div></div>'+
+      '<button class="x" data-close aria-label="Закрыть">✕</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="eyebrow">Листы файла</div>'+
+      '<div class="tw" style="margin:6px 0 16px"><table><thead><tr><th>Лист</th><th class="r">Строк</th>'+
+        '<th>Что в нём</th></tr></thead><tbody>'+sheets+'</tbody></table></div>'+
+      '<div class="eyebrow">Первые строки и что распозналось</div>'+
+      '<div class="tw" style="margin:6px 0 16px"><table><thead><tr><th>Артикул</th><th>Наименование</th>'+
+        '<th class="r">Количество</th><th>Состояние</th></tr></thead><tbody>'+first+'</tbody></table></div>'+
+      '<div class="note">Распозналось 45 позиций из 45, но у восьми есть дырки: три без артикула в прайсе, '+
+      'одна с нулевой ценой, четыре с суффиксом покраски −1. Они подсвечены и уходят дальше по шагам.</div>'+
+      '<div class="note">В боевой версии здесь будет ссылка на файл в хранилище. Прототип файл не открывает.</div>'+
+    '</div>'+
+    '<div class="modal-foot"><span class="right"><button class="btn" data-close>Закрыть</button></span></div>');
 }
 
 function requestModal(g, presetSup){
@@ -892,17 +1776,16 @@ function requestModal(g, presetSup){
       '<button class="x" data-close aria-label="Закрыть">✕</button></div>' +
     '<div class="modal-body">' +
       '<div class="eyebrow">Кому</div>' +
-      '<div style="margin:6px 0 16px">' + sups + '</div>' +
+      '<div style="margin:6px 0 16px">' + (sups || '<div class="note">В справочнике нет поставщиков этой группы.</div>') + '</div>' +
       '<div class="eyebrow">Позиции запроса</div>' +
       '<div class="tw" style="margin:6px 0 16px"><table><thead><tr><th>Артикул</th><th>Наименование</th>' +
         '<th class="r">Кол-во</th><th>Ед.</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '<div class="eyebrow">Текст письма</div>' +
       '<div class="letter" style="margin-top:6px">' + letterText(g) + '</div>' +
       '<div class="note">Прототип ничего не отправляет. Кнопка ставит статус в журнале запросов, ' +
-        'дальше письмо копируется руками. Автоматическая отправка появится, когда справочник будет заведён по-настоящему.</div>' +
+        'дальше письмо копируется руками.</div>' +
     '</div>' +
-    '<div class="modal-foot"><span class="step-note" style="font-size:11.5px;color:var(--faint)">' +
-      'Запрос попадёт в журнал и на шаг 5</span>' +
+    '<div class="modal-foot"><span class="eyebrow">Запрос попадёт в журнал и на шаг ' + STEP.tender + '</span>' +
       '<span class="right"><button class="btn" data-close>Закрыть</button>' +
       '<button class="btn" data-save-req="' + g + '">Сохранить черновиком</button>' +
       '<button class="btn btn-primary" data-send-req="' + g + '">Отметить отправленным</button></span></div>');
@@ -917,7 +1800,7 @@ function saveRequests(g, st){
     n++;
   });
   closeModal();
-  renderStage();
+  renderAll();
   return n;
 }
 
@@ -947,25 +1830,52 @@ function reqDetailModal(id){
       '<button class="btn btn-primary" data-req-st="' + r.id + '|got">Пришло КП</button></span></div>');
 }
 
-
 function reqGroupsPanel(){
   var gs = ['Стеклопакеты','Стекло и ограждения','Вентрешётки','Профиль и комплектующие'];
   return gs.map(function(g){
     var rs = reqsFor(g);
     var got = rs.filter(function(r){ return r.st === 'got'; }).length;
     var sent = rs.filter(function(r){ return r.st === 'sent'; }).length;
-    var st = got ? 'got' : (sent ? 'sent' : (rs.length ? 'draft' : 'draft'));
+    var st = got ? 'got' : (sent ? 'sent' : 'draft');
     var sub = rs.length
       ? 'запросов ' + rs.length + ' · КП ' + got + ' · ждём ' + sent
       : 'запрос ещё не собирали';
     return '<div class="reqrow"><span class="body"><span class="nm">' + g + '</span>' +
       '<span class="sub">' + sub + ' · поставщиков в справочнике: ' + supsFor(g).length + '</span></span>' +
       (rs.length ? reqPill(st) : '') +
-      '<button class="btn" data-req="' + g + '">Собрать запрос</button></div>';
+      '<button class="btn btn-sm" data-req="' + g + '">Собрать запрос</button></div>';
   }).join('');
 }
 
-/* экран справочника */
+function supplyModal(){
+  var rows = [
+    ['ИП Ярметов','Аренда манипулятора, рейс', 22000, 20000, 'без НДС'],
+    ['Мусорок','Вывоз мусора, пухто 27 м³', 39990, 35990, 'с НДС'],
+    ['ТД Биоэкология','Туалетная кабинка, всего в месяц', 5345, 5500, '777 аренда плюс 4 ТО по 1 142'],
+    ['Полома','Бытовка, месяц', 7000, 7000, 'с НДС'],
+    ['Ренталфенс','Мини-кран, день', 38200, null, 'вместо лесов, позиция новая']
+  ].map(function(r){
+    var drift = r[3] != null && r[2] !== r[3];
+    return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td>'+
+      '<td class="r num">'+f(r[2])+'</td>'+
+      '<td class="r num" style="color:var(--faint)">'+(r[3] != null ? f(r[3]) : '—')+'</td>'+
+      '<td>'+(drift ? '<span class="drift"><b>расходится</b></span>' : '<span style="color:var(--faint)">совпадает</span>')+'</td>'+
+      '<td style="color:var(--muted)">'+r[4]+'</td></tr>';
+  }).join('');
+  openModal(
+    '<div class="modal-head"><div><h2>Справочник снабжения</h2>'+
+      '<div class="modal-sub">Цены на услуги, версия от '+SUPPLY_DATE+' · 12 поставщиков, 42 позиции</div></div>'+
+      '<button class="x" data-close aria-label="Закрыть">✕</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="tw"><table><thead><tr><th>Поставщик</th><th>Позиция</th>'+
+      '<th class="r">Снабжение, ₽</th><th class="r">Прайс '+PRICE_DATE+', ₽</th><th>Сверка</th><th>Комментарий</th></tr></thead>'+
+      '<tbody>'+rows+'</tbody></table></div>'+
+      '<div class="note">Статьи техники ссылаются на этот справочник с датой, а не хранят копию числа. '+
+      'Прайс прочих расходов от '+PRICE_DATE+' считает по старым ценам, поэтому расхождение видно прямо в строке статьи.</div>'+
+    '</div>'+
+    '<div class="modal-foot"><span class="right"><button class="btn" data-close>Закрыть</button></span></div>');
+}
+
 function suppliersView(){
   var cards = SUPPLIERS.map(function(s){
     var mine = REQUESTS.filter(function(r){ return r.sup === s.id; });
@@ -979,7 +1889,7 @@ function suppliersView(){
       }).join('') +
       '<div class="note" style="margin-top:10px">' + s.terms + '</div>' +
       '<div class="card-foot"><span class="st">запросов ' + mine.length + ' · КП получено ' + got + '</span>' +
-      '<button class="btn" data-sup-req="' + s.groups[0] + '|' + s.id + '">Запросить цены</button></div></div>';
+      '<button class="btn btn-sm" data-sup-req="' + s.groups[0] + '|' + s.id + '">Запросить цены</button></div></div>';
   }).join('');
 
   var jrows = REQUESTS.slice().reverse().map(function(r){
@@ -989,7 +1899,7 @@ function suppliersView(){
       '<td style="color:var(--muted)">' + (r.note || '—') + '</td>' +
       '<td>' + reqPill(r.st) + '</td>' +
       '<td class="r num">' + (r.sum ? f(r.sum) : '—') + '</td>' +
-      '<td><button class="btn" data-req-open="' + r.id + '" style="padding:3px 9px;font-size:11.5px">Открыть</button></td></tr>';
+      '<td><button class="btn btn-sm" data-req-open="' + r.id + '">Открыть</button></td></tr>';
   }).join('');
 
   var waiting = REQUESTS.filter(function(r){ return r.st === 'sent'; }).length;
@@ -997,10 +1907,11 @@ function suppliersView(){
 
   return '<div class="list-head"><div><h1 class="stage-title">Поставщики</h1>' +
     '<p class="stage-sub">Общий справочник отдела: кто что возит, с кем разговаривать и что уже запрашивали. ' +
-    'Отсюда собирается запрос цен, статусы возвращаются на шаги 4 и 5 расчёта.</p></div>' +
+    'Отсюда собирается запрос цен, статусы возвращаются на шаг ' + STEP.tender + ' расчёта.</p></div>' +
     '<div class="stage-actions"><button class="btn">Добавить поставщика</button>' +
+    '<button class="btn" data-supply>Справочник снабжения</button>' +
     '<button class="btn btn-primary" data-req="Стеклопакеты">Новый запрос</button></div></div>' +
-  cells([['Поставщиков в справочнике', String(SUPPLIERS.length), 'по 6 товарным группам'],
+  cells([['Поставщиков в справочнике', String(SUPPLIERS.length), 'по 7 товарным группам'],
          ['Запросов по объекту', String(REQUESTS.length), drafts + ' в черновиках'],
          ['Ждём ответа', String(waiting), 'сроки в журнале ниже']]) +
   panel('Карточки', '', '<div class="cards">' + cards + '</div>') +
@@ -1010,44 +1921,54 @@ function suppliersView(){
     '<tbody>' + jrows + '</tbody></table></div>', true) +
   panel('Про отправку', '',
     '<div class="note">В прототипе письмо только формируется и показывается. Кнопка <b>«Отметить отправленным»</b> ' +
-    'ставит статус и дату в журнал, дальше расчётчик копирует текст в почту. ' +
-    'Так виден весь сценарий, а настоящая рассылка подключается позже одной точкой.</div>');
+    'ставит статус и дату в журнал, дальше расчётчик копирует текст в почту.</div>');
 }
 
-/* ---- финансовый план ---- */
+/* ==================================================================
+   Шаг 8. Финансовый план
+   Раскладка по месяцам не переделывалась: ждём замечаний
+   руководителей проектов со встречи 09.09.
+   ================================================================== */
 var FIN = {
   months:['окт 26','ноя 26','дек 26','янв 27','фев 27','мар 27','апр 27','май 27'],
   rows:[
-    {k:'proj', name:'Проектирование и геодезия', sum:1021363.70, d:[55,35,10,0,0,0,0,0],
+    {k:'proj', name:'Проектирование и геодезия', d:[55,35,10,0,0,0,0,0],
      hint:'обмеры и рабочая документация в начале'},
-    {k:'mat',  name:'Материалы и закупка',       sum:22759644.06, d:[10,18,20,18,17,17,0,0],
+    {k:'mat',  name:'Материалы и закупка',       d:[10,18,20,18,17,17,0,0],
      hint:'предоплаты поставщикам и поставки на объект'},
-    {k:'man',  name:'Изготовление',              sum:4255869.77, d:[4,16,20,20,20,20,0,0],
+    {k:'man',  name:'Изготовление',              d:[4,16,20,20,20,20,0,0],
      hint:'по загрузке производства'},
-    {k:'mnt',  name:'Монтаж',                    sum:9459756.21, d:[0,10,15,17,18,17,15,8],
-     hint:'по процентовке этапов с шага 7'},
-    {k:'oth',  name:'Прочие расходы',            sum:1282005.18, d:[13,13,13,13,12,12,12,12],
+    {k:'mnt',  name:'Монтаж',                    d:[0,10,15,17,18,17,15,8],
+     hint:'по процентовке этапов с шага монтажа'},
+    {k:'oth',  name:'Прочие расходы',            d:[13,13,13,13,12,12,12,12],
      hint:'бытовки, техника, вывоз мусора — помесячно'}
   ],
   work:[10,16,16,15,15,12,10,6],
   avans:0, delay:30, hold:5,
   edited:{}, unit:'pct'
 };
+var FIN_SUM = {
+  proj: function(k){ return PRJ_VSTR * k; },
+  mat:  function(k){ return matTotal() * k; },
+  man:  function(k){ return manTotal() * k; },
+  mnt:  function(k){ return mountTotal() * k; },
+  oth:  function(k){ return (othTotal() + fundsTotal()) * k; }
+};
 
 function finCalc(avans, delay){
-  var r = calc(state.m), K = r.K, n = FIN.months.length;
+  var r = calc(state.m), K = r.K, n = FIN.months.length, k = factor();
   avans = (avans === undefined ? FIN.avans : avans);
   delay = (delay === undefined ? FIN.delay : delay);
 
   var outRows = FIN.rows.map(function(row){
-    return {name:row.name, k:row.k, hint:row.hint, sum:row.sum, d:row.d,
-            arr:row.d.map(function(p){ return row.sum * p / 100; })};
+    var sum = FIN_SUM[row.k](k);
+    return {name:row.name, k:row.k, hint:row.hint, sum:sum, d:row.d,
+            arr:row.d.map(function(p){ return sum * p / 100; })};
   });
 
   var act = FIN.work.map(function(p){ return K * p / 100; });
   var actSum = act.reduce(function(a,b){ return a + b; }, 0);
 
-  /* накладные помесячно равными долями, НДС к уплате — по закрытым актам */
   var ovhArr = [], vatArr = [];
   for (var i = 0; i < n; i++){
     ovhArr.push(r.ovh / n);
@@ -1066,7 +1987,6 @@ function finCalc(avans, delay){
   for (i2 = 0; i2 < n; i2++) outflow.push(0), inflow.push(0);
   outRows.forEach(function(row){ row.arr.forEach(function(v, i){ outflow[i] += v; }); });
 
-  /* поступления: аванс сразу, акты за вычетом зачёта аванса и удержания, со сдвигом на отсрочку */
   var av = K * avans / 100;
   inflow[0] += av;
   var share = 1 - avans / 100 - FIN.hold / 100;
@@ -1153,7 +2073,7 @@ var SCENARIOS = [
   {id:2, name:'Отсрочка 45 дней',  a:0,  d:45, sub:'без аванса, оплата на 45-й день'}
 ];
 
-views[11] = function(){
+views_8 = function(){
   var F = finCalc();
   var n = F.n;
   var pct = FIN.unit === 'pct';
@@ -1214,7 +2134,7 @@ views[11] = function(){
       '<td class="r num">' + f(C2.avansSum) + '</td>' +
       '<td class="r num"' + (C2.min < 0 ? ' style="color:var(--p-missing)"' : '') + '>' + f(C2.min) + '</td>' +
       '<td>' + FIN.months[C2.minI] + '</td>' +
-      '<td class="r"><button class="btn" data-scn="' + s.id + '" style="padding:3px 9px;font-size:11.5px"' +
+      '<td class="r"><button class="btn btn-sm" data-scn="' + s.id + '"' +
         (cur ? ' disabled' : '') + '>' + (cur ? 'выбран' : 'применить') + '</button></td></tr>';
   }).join('');
 
@@ -1223,20 +2143,21 @@ views[11] = function(){
   return head('Финансовый план',
     'Затраты и выполнение раскладываются по месяцам стройки. Из выполнения получаются акты, из актов с учётом аванса, ' +
     'удержания и отсрочки — поступления. Разница нарастающим итогом показывает, где касса уходит в минус и какой аванс нужен.',
-    '<button class="btn" data-fin-unit>' + (pct ? 'Показать ₽' : 'Показать %') + '</button>' +
-    '<button class="btn">Выгрузить график</button>') +
+    '<button class="btn" data-fin-unit>' + (pct ? 'Показать ₽' : 'Показать %') + '</button>') +
+  what('Раскладка по месяцам пока стоит на процентах. Это заглушка: 09.09 встреча с руководителями проектов, ' +
+       'они предложат своё видение — процент, опросник или график производства работ. До их замечаний шаг не переделывается.') +
 
-  panel('Условия по договору', 'жёлтые поля меняются в торге',
+  panel('Условия по договору', 'охряные поля меняются в торге',
     '<div class="grid3" style="gap:16px;background:none">' +
     '<div><div class="eyebrow">Аванс, % от контракта</div>' +
       '<div class="field" style="margin-top:6px"><input type="text" id="finAvans" value="' + FIN.avans + '"><span class="sum-unit">%</span></div>' +
-      '<div style="font-size:11px;color:var(--faint);margin-top:5px">' + f(F.avansSum) + ' ₽, зачитывается в актах</div></div>' +
+      '<div class="field-note">' + f(F.avansSum) + ' ₽, зачитывается в актах</div></div>' +
     '<div><div class="eyebrow">Отсрочка оплаты, дней</div>' +
       '<div class="field" style="margin-top:6px"><input type="text" id="finDelay" value="' + FIN.delay + '"><span class="sum-unit">дн</span></div>' +
-      '<div style="font-size:11px;color:var(--faint);margin-top:5px">от подписания акта до денег</div></div>' +
+      '<div class="field-note">от подписания акта до денег</div></div>' +
     '<div><div class="eyebrow">Удержание, %</div>' +
       '<div class="field" style="margin-top:6px"><input type="text" id="finHold" value="' + FIN.hold + '"><span class="sum-unit">%</span></div>' +
-      '<div style="font-size:11px;color:var(--faint);margin-top:5px">' + f(F.holdSum) + ' ₽, возврат через год после сдачи</div></div>' +
+      '<div class="field-note">' + f(F.holdSum) + ' ₽, возврат через год после сдачи</div></div>' +
     '</div>') +
 
   panel('Затраты и выполнение по месяцам', pct ? 'значения в % от строки' : 'значения в ₽',
@@ -1248,7 +2169,7 @@ views[11] = function(){
       '<div style="font-size:10.5px;color:var(--faint)">' + (pct ? '% от цены контракта, закрывается актом' : 'сумма акта за месяц') +
       '</div></td>' + wtds + '<td class="r num">' + f(F.K) + '</td></tr>' +
     '<tr class="inflow"><td class="nm"><b>Поступления, всего</b>' +
-      '<div style="font-size:10.5px;color:var(--faint)">аванс + акты за вычетом зачёта и удержания</div></td>' + totIn +
+      '<div style="font-size:10.5px;color:var(--faint)">аванс плюс акты за вычетом зачёта и удержания</div></td>' + totIn +
       '<td class="r num">' + f(F.inflow.reduce(function(a, b){ return a + b; }, 0)) + '</td></tr>' +
     '<tr><td class="nm"><b>Остаток нарастающим итогом</b></td>' + totBal + '<td class="r num">' + f(F.bal[n - 1]) + '</td></tr>' +
     '</tbody></table></div>', true) +
@@ -1271,19 +2192,23 @@ views[11] = function(){
     '<div><span class="k">Возврат удержания, через 12 мес после сдачи</span><span class="v">' + f(F.holdSum) + ' ₽</span></div>' +
     '<div><span class="k">Остаток на ' + FIN.months[n - 1] + ' плюс хвост и удержание</span><span class="v">' +
       f(F.bal[n - 1] + F.tail + F.holdSum) + ' ₽</span></div>' +
-    '<div><span class="k">Чистая прибыль из итога, шаг 10</span><span class="v">' + f(F.r.profit) + ' ₽</span></div>' +
+    '<div><span class="k">Чистая прибыль из итога, шаг ' + STEP.budget + '</span><span class="v">' + f(F.r.profit) + ' ₽</span></div>' +
     '</div>' +
     '<div class="note">Две модели сходятся: сумма всех поступлений минус все платежи даёт ту же чистую прибыль, ' +
-    'что и расчёт на шаге 10. График не меняет экономику объекта, он показывает <b>когда</b> деньги приходят и уходят, ' +
-    'а живые деньги на конец стройки (' + f(F.r.cf) + ' ₽) это та же прибыль за вычетом удержания.</div>');
+    'что и расчёт на шаге ' + STEP.budget + '. График не меняет экономику объекта, он показывает <b>когда</b> деньги приходят и уходят, ' +
+    'а живые деньги на конец стройки (' + f(F.r.cf) + ' ₽) это та же прибыль за вычетом удержания.</div>') +
+  hands('Поправить проценты по месяцам, если известен график работ. Аванс, отсрочку и удержание взять из проекта договора.') +
+  stepNav();
 };
 
-/* ---- список объектов ---- */
+/* ==================================================================
+   Список объектов
+   ================================================================== */
 var OBJECTS = [
   {name:'Догма Юкки, секции 1–3', variant:'Встройка · BC-36.2 vstroyka', cust:'Догма', st:'Тендер',
-   s:3180.889, cost:38778638.92, price:54160461.64, profit:0.08, who:'Груздев И.', date:'26.08.2026', cur:true},
+   s:3180.889, cost:38778638.92, price:54160461.63, profit:0.08, who:'Груздев И.', date:'26.08.2026', cur:true},
   {name:'Догма Юкки, секции 1–3', variant:'Навеска · BC-36.2 navesnaya', cust:'Догма', st:'Тендер',
-   s:2104.50, cost:24106000, price:33690000, profit:0.079, who:'Груздев И.', date:'26.08.2026'},
+   s:1073.00, cost:13081084.81, price:18269789.97, profit:0.08, who:'Груздев И.', date:'условно'},
   {name:'Котельники К11', variant:'Холодные витражи, пилон внутрь', cust:'ГК Самолёт', st:'Расчёт',
    s:1620.00, cost:17840000, price:null, profit:null, who:'Груздев И.', date:'01.09.2026'},
   {name:'Level Причальный', variant:'Фасад, ленточное остекление', cust:'Level Group', st:'Выигран',
@@ -1300,10 +2225,10 @@ function objectsView(){
       '<td><div class="obj-name">'+o.name+'</div><div class="obj-sub">'+o.variant+'</div></td>'+
       '<td>'+o.cust+'</td>'+
       '<td><span class="stage-pill'+(o.cur?' now':'')+'">'+(o.cur?'открыт':o.st)+'</span></td>'+
-      '<td class="r num">'+nf2.format(o.s)+'</td>'+
+      '<td class="r num">'+f2(o.s)+'</td>'+
       '<td class="r num">'+mln(o.cost)+'</td>'+
       '<td class="r num">'+(o.price?mln(o.price):'—')+'</td>'+
-      '<td class="r num">'+(o.profit?nf2.format(o.profit*100)+' %':'—')+'</td>'+
+      '<td class="r num">'+(o.profit?f2(o.profit*100)+' %':'—')+'</td>'+
       '<td>'+o.who+'</td><td class="mono" style="font-size:11px;color:var(--faint)">'+o.date+'</td></tr>';
   }).join('');
   var tot = OBJECTS.reduce(function(a,o){
@@ -1312,9 +2237,9 @@ function objectsView(){
   return '<div class="list-head"><div><h1 class="stage-title">Объекты</h1>'+
     '<p class="stage-sub">Все расчёты отдела в одном месте. Открытый объект отмечен слева; '+
     'по каждому хранятся ОЗМ, прайсы, полученные КП и зафиксированный тендерный бюджет.</p></div>'+
-    '<div class="stage-actions"><button class="btn-primary btn">Новый расчёт</button></div></div>' +
+    '<div class="stage-actions"><button class="btn btn-primary">Новый расчёт</button></div></div>' +
   cells([['Объектов в работе','6','из них 3 в тендере'],
-         ['Площадь конструкций', nf0.format(21585)+' м²','по всем объектам'],
+         ['Площадь конструкций', nf0.format(20553)+' м²','по всем объектам'],
          ['Сумма контрактов', mln(tot)+' ₽','без проигранных']]) +
   panel('Расчёты','показаны 6 из 6',
     '<div class="tw"><table><thead><tr><th>Объект</th><th>Заказчик</th><th>Стадия</th>'+
@@ -1323,58 +2248,40 @@ function objectsView(){
     '<tbody>'+rows+'</tbody></table></div>', true) +
   panel('Про эти цифры','',
     '<div class="note">Строка <b>Догма Юкки · Встройка</b> посчитана по настоящему файлу расчёта, '+
-    'её числа сходятся с ним до рубля. Остальные строки — примеры, чтобы показать, как выглядит список.</div>');
+    'её числа сходятся с ним до рубля. Строка <b>Навеска</b> условная: площадь 1 073 м² из документа 16, '+
+    'удельные цены взяты как у встройки, выгрузки от Андрея пока нет. Остальные строки — примеры.</div>');
 }
 
-/* ---- состояние и отрисовка ---- */
-var state = {step:2, m:0.3966571, mode:'object'};
-
-function renderRail(){
-  document.getElementById('steps').innerHTML = STEPS.map(function(s){
-    var attn = s.st && s.st !== 'done' && s.note;
-    return '<li class="tstep'+(s.n===state.step?' active':'')+'"'+(s.st?' data-st="'+s.st+'"':'')+'>'+
-      '<button data-step="'+s.n+'" aria-current="'+(s.n===state.step?'step':'false')+'">'+
-      '<span class="tdot">'+(s.st==='done' ? '✓' : s.n)+'</span>'+
-      '<span class="tlabel">'+s.name+'</span>'+
-      '<span class="tval'+(attn?' attn':'')+'">'+(attn ? s.note : (s.val||''))+'</span>'+
-      '</button></li>';
-  }).join('');
-  var reached = 0;
-  STEPS.forEach(function(s,i){ if(s.st) reached = i; });
-  document.getElementById('fill').style.width = (reached/(STEPS.length-1)*100)+'%';
-  document.getElementById('progress').textContent = 'Этапы · 7 из 11 готовы, 4 требуют внимания';
-}
-
-function setMode(mode){
-  state.mode = mode;
-  var list = mode !== 'object';
-  document.getElementById('tracker').hidden = list;
-  document.getElementById('objbar').hidden = list;
-  document.getElementById('summary').hidden = list;
-  document.getElementById('shell').classList.toggle('wide', list);
-  renderStage();
-  window.scrollTo({top:0, behavior:'smooth'});
-}
+/* ==================================================================
+   Экраны и отрисовка
+   ================================================================== */
+views[STEP.ozm]    = function(){ return views_1(); };
+views[STEP.price]  = function(){ return views_2(); };
+views[STEP.tender] = function(){ return views_3(); };
+views[STEP.prod]   = function(){ return views_4(); };
+views[STEP.mount]  = function(){ return views_5(); };
+views[STEP.extras] = function(){ return views_6(); };
+views[STEP.budget] = function(){ return views_7(); };
+views[STEP.fin]    = function(){ return views_8(); };
 
 function renderStage(){
   document.getElementById('stage').innerHTML =
     state.mode === 'list' ? objectsView() :
     state.mode === 'sup'  ? suppliersView() : views[state.step]();
-  document.querySelectorAll('.seg').forEach(function(seg){
-    seg.addEventListener('click', function(e){
-      var b = e.target.closest('button'); if(!b) return;
-      seg.querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-pressed','false'); });
-      b.setAttribute('aria-pressed','true');
-    });
-  });
+}
+
+function row(k, v, cls){
+  return '<div><span class="k">'+k+'</span><span class="v'+(cls?' '+cls:'')+'">'+f(v)+' ₽</span></div>';
 }
 
 function renderSummary(){
-  var r = calc(state.m);
-  document.getElementById('cost').textContent = f(C) + ' ₽';
-  document.getElementById('costM2').textContent = nf2.format(C/S) + ' ₽/м² · 3 180,89 м²';
+  var M = mdl(), r = calc(state.m), fm = floorM();
+  document.getElementById('cost').textContent = f(M.C) + ' ₽';
+  document.getElementById('costM2').textContent = f2(M.C/M.S) + ' ₽/м² · ' + f2(M.S) + ' м²';
+  document.getElementById('blkLine').textContent = 'блок: ' + BLOCK_NAMES[state.block] +
+    (state.block === 'vstr' ? '' : ' · навеска условная, В8');
   document.getElementById('mVal').textContent = pc(state.m);
-  document.getElementById('priceM2').textContent = nf2.format(r.K/S) + ' ₽/м²';
+  document.getElementById('priceM2').textContent = f2(r.K/M.S) + ' ₽/м²';
   if (document.activeElement !== document.getElementById('contract'))
     document.getElementById('contract').value = f(r.K);
   document.getElementById('res').innerHTML =
@@ -1383,89 +2290,204 @@ function renderSummary(){
     row('Чистая прибыль', r.profit, r.profit>=0?'pos':'neg') +
     row('Живые деньги', r.cf, r.cf>=0?'pos':'neg');
   document.getElementById('verdict').innerHTML = r.cf >= 0
-    ? '<div class="ok-line">Запас до дна '+pc(state.m-floorM)+' наценки — можно падать до '+f(C*(1+floorM))+' ₽</div>'
-    : '<div class="warn">Ниже дна: своих денег в объект придётся доложить '+f(-r.cf)+' ₽</div>';
+    ? '<div class="ok-line">Запас до дна '+pc(state.m-fm)+' наценки — можно падать до '+f(M.C*(1+fm))+' ₽</div>'
+    : '<div class="warn"><b>Зачем нам завтрашний день?</b> Ниже дна: своих денег в объект '+
+      'придётся доложить '+f(-r.cf)+' ₽</div>';
   var ft = document.getElementById('floorTick');
-  ft.style.left = ((floorM*100 - 15)/(70-15)*100) + '%';
-  ft.textContent = 'дно ' + pc(floorM);
-  if (state.mode === 'object' && (state.step === 10 || state.step === 11)) renderStage();
-}
-function row(k, v, cls){
-  return '<div><span class="k">'+k+'</span><span class="v'+(cls?' '+cls:'')+'">'+f(v)+' ₽</span></div>';
+  ft.style.left = ((fm*100 - 15)/(70-15)*100) + '%';
+  ft.textContent = 'дно ' + pc(fm);
 }
 
+function renderAll(){ renderRail(); renderCrumbs(); renderStage(); renderSummary(); }
+
+function setMode(mode){
+  state.mode = mode;
+  var list = mode !== 'object';
+  document.getElementById('tracker').hidden = list;
+  document.getElementById('objbar').hidden = list;
+  document.getElementById('summary').hidden = list;
+  document.getElementById('shell').classList.toggle('wide', list);
+  renderAll();
+  if (list){ document.getElementById('objbar').hidden = true; }
+  if (window.pageYOffset) window.scrollTo(0, 0);
+}
+
+function goStep(n){
+  if (n < 1 || n > LAST_STEP) return;
+  if (n > STEP.ozm && !formOk()) n = STEP.ozm;
+  state.mode = 'object';
+  document.getElementById('tracker').hidden = false;
+  document.getElementById('objbar').hidden = false;
+  document.getElementById('summary').hidden = false;
+  document.getElementById('shell').classList.remove('wide');
+  state.step = n;
+  renderAll();
+}
+
+/* ---- разбор чисел ------------------------------------------------- */
+function num(v){
+  var x = parseFloat(String(v).replace(/\s| /g, '').replace(',', '.'));
+  return isNaN(x) ? null : x;
+}
+
+/* ---- события ------------------------------------------------------ */
 document.getElementById('steps').addEventListener('click', function(e){
   var b = e.target.closest('[data-step]'); if(!b) return;
-  state.step = +b.dataset.step; renderRail(); renderStage();
+  goStep(+b.dataset.step);
 });
 
-/* навигация по объектам */
-var pop = document.getElementById('pop'), vbtn = document.getElementById('variantBtn');
-function closePop(){ pop.hidden = true; vbtn.setAttribute('aria-expanded','false'); }
-vbtn.addEventListener('click', function(e){
-  e.stopPropagation();
-  pop.hidden = !pop.hidden;
-  vbtn.setAttribute('aria-expanded', String(!pop.hidden));
+document.getElementById('blockPick').addEventListener('click', function(e){
+  var b = e.target.closest('[data-block]'); if(!b) return;
+  state.block = b.dataset.block;
+  renderAll();
 });
+
 document.addEventListener('click', function(e){
-  if (!pop.hidden && !pop.contains(e.target)) closePop();
   var nav = e.target.closest('[data-nav]');
-  if (nav){ closePop(); setMode(nav.dataset.nav === 'sup' ? 'sup' : 'list'); }
+  if (nav) setMode(nav.dataset.nav === 'sup' ? 'sup' : 'list');
 });
-document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closePop(); });
-document.getElementById('stage').addEventListener('click', function(e){
-  var r = e.target.closest('[data-obj]');
-  if (r && state.mode === 'list') setMode('object');
-});
-document.getElementById('markup').addEventListener('input', function(e){
-  state.m = +e.target.value / 100; renderSummary();
-});
-document.getElementById('contract').addEventListener('input', function(e){
-  var v = parseFloat(e.target.value.replace(/[^\d]/g,''));
-  if (!v || v < C*1.15 || v > C*1.7) return;
-  state.m = v / C - 1;
-  document.getElementById('markup').value = (state.m*100).toFixed(1);
-  renderSummary();
-});
-document.getElementById('contract').addEventListener('blur', renderSummary);
 
-/* ---- запросы поставщикам, финплан ---- */
 document.getElementById('stage').addEventListener('click', function(e){
   var t;
+  if ((t = e.target.closest('[data-go]'))){
+    if (t.disabled) return;
+    goStep(+t.dataset.go); return;
+  }
+  if (e.target.closest('[data-passport]')){ passportModal(); return; }
+  if (e.target.closest('[data-supply]')){ supplyModal(); return; }
+  if (e.target.closest('[data-old-form]')){ oldFormModal(); return; }
+  if ((t = e.target.closest('[data-kp]'))){ kpModal(t.dataset.kp); return; }
+  if ((t = e.target.closest('[data-remind]'))){ requestModal(t.dataset.remind); return; }
+  if ((t = e.target.closest('[data-metiz]'))){ state.metiz = t.dataset.metiz; renderAll(); return; }
+  if ((t = e.target.closest('[data-dir]'))){ state.dirForm = t.dataset.dir; renderStage(); return; }
+  if ((t = e.target.closest('[data-open]'))){
+    var key = t.dataset.open;
+    state.open[key] = !state.open[key];
+    renderStage(); return;
+  }
+  if (e.target.closest('[data-add-art]')){
+    ARTICLES.push({k:'new'+(ARTICLES.length+1), n:'Новая статья', req:'optional', on:false, dir:OTH,
+                   rec:0, acc:0, src:'заведена руками ' + TODAY, note:'опишите статью и поставьте сумму'});
+    renderAll(); return;
+  }
   if ((t = e.target.closest('[data-req]'))){ requestModal(t.dataset.req); return; }
   if ((t = e.target.closest('[data-sup-req]'))){
     var v = t.dataset.supReq.split('|'); requestModal(v[0], v[1]); return;
   }
   if ((t = e.target.closest('[data-req-open]'))){ reqDetailModal(+t.dataset.reqOpen); return; }
-  if ((t = e.target.closest('[data-fin-unit]'))){
+  if (e.target.closest('[data-fin-unit]')){
     FIN.unit = FIN.unit === 'pct' ? 'rub' : 'pct'; renderStage(); return;
   }
   if ((t = e.target.closest('[data-scn]'))){
     var s = SCENARIOS[+t.dataset.scn];
     FIN.avans = s.a; FIN.delay = s.d; renderStage(); return;
   }
+  if (state.mode === 'list' && e.target.closest('[data-obj]')){ goStep(state.step); return; }
+});
+
+/* правка обязательных полей: кнопку «Дальше» гасим сразу, без перерисовки */
+document.getElementById('stage').addEventListener('input', function(e){
+  var i = e.target;
+  if (!i.dataset || !i.dataset.field) return;
+  state.form[i.dataset.field] = i.value;
+  if (i.dataset.field === 'country') state.country = i.value;
+  var nx = document.getElementById('btnNext');
+  if (nx) nx.disabled = !formOk();
 });
 
 document.getElementById('stage').addEventListener('change', function(e){
-  var i = e.target;
-  if (i.dataset && i.dataset.fin){
-    var v = parseFloat(String(i.value).replace(',', '.'));
-    if (isNaN(v) || v < 0) { renderStage(); return; }
-    var parts = i.dataset.fin.split('-'), idx = +parts[1];
-    if (parts[0] === 'work') FIN.work[idx] = v;
-    else FIN.rows.forEach(function(r){ if (r.k === parts[0]) r.d[idx] = v; });
-    FIN.edited[i.dataset.fin] = true;
+  var i = e.target, d = i.dataset || {}, x;
+
+  if (d.field){
+    state.form[d.field] = i.value;
+    if (d.field === 'country') state.country = i.value;
+    renderAll(); return;
+  }
+  if (d.param){
+    x = num(i.value);
+    if (x === null){ renderAll(); return; }
+    PARAMS[d.param].value = x; paramEdited[d.param] = true;
+    renderAll(); return;
+  }
+  if (i.hasAttribute('data-target')){
+    x = num(i.value);
+    if (x === null || x < 0){ renderAll(); return; }
+    state.target = x / 100; renderAll(); return;
+  }
+  if (d.tprice){
+    x = num(i.value);
+    TEND.forEach(function(r){ if (r.k === d.tprice && x !== null) r.price = x; });
+    renderAll(); return;
+  }
+  if (d.man){
+    x = num(i.value);
+    MAN.forEach(function(r){ if (r.k === d.man && x !== null){ r.rate = x; r.hand = 1; } });
+    renderAll(); return;
+  }
+  if (d.mnt){
+    x = num(i.value);
+    MOUNT.forEach(function(r){ if (r.k === d.mnt && x !== null){ r.rate = x; r.hand = 1; } });
+    renderAll(); return;
+  }
+  if (d.ip){
+    x = num(i.value);
+    MOUNT.forEach(function(r){ if (r.k === d.ip && x !== null) r.ip = Math.max(0, Math.min(100, x)); });
+    renderAll(); return;
+  }
+  if (d.acc){
+    x = num(i.value);
+    ARTICLES.forEach(function(a){ if (a.k === d.acc && x !== null){ a.acc = x; a.accEdited = 1; } });
+    renderAll(); return;
+  }
+  if (d.art){
+    var art = null;
+    ARTICLES.forEach(function(a){ if (a.k === d.art) art = a; });
+    if (!art) return;
+    art.on = i.checked;
+    if (art.req === 'choose_one' && i.checked)
+      ARTICLES.forEach(function(a){ if (a !== art && a.grp === art.grp) a.on = false; });
+    renderAll(); return;
+  }
+  if (i.hasAttribute('data-mk')){
+    x = num(i.value); state.marketing = x === null ? 0 : x; renderAll(); return;
+  }
+  if (i.hasAttribute('data-fn')){
+    x = num(i.value); state.funds = x === null ? 0 : x; renderAll(); return;
+  }
+  if (d.fin){
+    x = num(i.value);
+    if (x === null || x < 0){ renderStage(); return; }
+    var parts = d.fin.split('-'), idx = +parts[1];
+    if (parts[0] === 'work') FIN.work[idx] = x;
+    else FIN.rows.forEach(function(r){ if (r.k === parts[0]) r.d[idx] = x; });
+    FIN.edited[d.fin] = true;
     renderStage(); return;
   }
   if (i.id === 'finAvans' || i.id === 'finDelay' || i.id === 'finHold'){
-    var x = parseFloat(String(i.value).replace(',', '.'));
-    if (isNaN(x) || x < 0) { renderStage(); return; }
+    x = num(i.value);
+    if (x === null || x < 0){ renderStage(); return; }
     if (i.id === 'finAvans') FIN.avans = Math.min(x, 100);
     if (i.id === 'finDelay') FIN.delay = Math.min(x, 180);
     if (i.id === 'finHold')  FIN.hold  = Math.min(x, 30);
     renderStage();
   }
 });
+
+document.getElementById('markup').addEventListener('input', function(e){
+  state.m = +e.target.value / 100;
+  renderSummary();
+  if (state.step === STEP.budget || state.step === STEP.fin) renderStage();
+});
+document.getElementById('contract').addEventListener('input', function(e){
+  var C = mdl().C;
+  var v = parseFloat(e.target.value.replace(/[^\d]/g,''));
+  if (!v || v < C*1.15 || v > C*1.7) return;
+  state.m = v / C - 1;
+  document.getElementById('markup').value = (state.m*100).toFixed(1);
+  renderSummary();
+  if (state.step === STEP.budget || state.step === STEP.fin) renderStage();
+});
+document.getElementById('contract').addEventListener('blur', renderSummary);
 
 document.getElementById('overlay').addEventListener('click', function(e){
   if (e.target.id === 'overlay'){ closeModal(); return; }
@@ -1476,18 +2498,17 @@ document.getElementById('overlay').addEventListener('click', function(e){
   if ((t = e.target.closest('[data-req-st]'))){
     var v = t.dataset.reqSt.split('|'), id = +v[0];
     REQUESTS.forEach(function(r){
-      if (r.id === id){
-        r.st = v[1]; r.resp = TODAY;
-        if (v[1] === 'got' && !r.sum) r.sum = null;
-      }
+      if (r.id === id){ r.st = v[1]; r.resp = TODAY; }
     });
-    closeModal(); renderStage(); return;
+    closeModal(); renderAll(); return;
   }
 });
 document.addEventListener('keydown', function(e){
   if (e.key === 'Escape' && !document.getElementById('overlay').hidden) closeModal();
 });
 
-renderRail(); renderStage(); renderSummary();
+/* ---- старт --------------------------------------------------------- */
+MAT_REST = MAT_VSTR - (priceTotal() + buyTotal() + tendTotal());
+renderAll();
 })();
 </script>
