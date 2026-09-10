@@ -2666,7 +2666,9 @@ function blockers(){
   /* 4. условные данные объекта: у Догмы это навеска, вопрос В8 */
   if (O.condBlock){
     var v8 = issueBy('В8');
-    add({kind:'cond', tag:'В8', what:'В8. Условные данные объекта: ' + O.condNote,
+    /* condNote заканчивается номером вопроса, он же стоит в начале строки */
+    var cn = O.condNote.replace(/,\s*В8\s*$/, '');
+    add({kind:'cond', tag:'В8', what:'В8. Условные данные объекта: ' + cn,
          step:STEP.ozm, who:v8.who, from:v8.from, norm:v8.norm});
   }
 
