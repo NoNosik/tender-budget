@@ -3026,9 +3026,21 @@ function finCalc(avans, delay){
     }
     return out;
   }
+  /* Накладные считаются от КС месяца, а не делятся ровно по горизонту:
+     ДИР Сената!G174 = E174 × (G14 − G173 − SUM(G155:G157)), то есть 10 % от КС
+     месяца за вычетом генподрядных того же месяца (G173 = E173 × G14 + G145)
+     и администрирования. В месяцах без КС накладных нет.
+     Маркетинг и привлечённые средства (G156:G157) в вычет не берём: в calcOn
+     их нет в базе накладных, а на обоих объектах они нули. */
+  var shr = ksShares(), Mdl = mdl(), firstIdx = firstKsMonth();
+  var ovhArr = act.map(function(a, j){
+    var genM = (Mdl.gen + r.genK) * shr[j] / 100;
+    var admM = (j === firstIdx ? Mdl.adm : 0);
+    return OVH * (a - genM - admM);
+  });
   var extra = [
-    {name:'Накладные 10 %', k:'ovh', sum:r.ovh,
-     arr:act.map(function(){ return r.ovh / n; }), hint:'считаются от цены контракта, делятся ровно'},
+    {name:'Накладные 10 %', k:'ovh', sum:r.ovh, arr:ovhArr,
+     hint:'10 % от КС месяца минус генподрядные и администрирование, ДИР Сената!G174'},
     {name:'НДС к уплате', k:'vat', sum:r.vatOut,
      arr:quarterly(act.map(function(a){ return actSum ? r.vatOut * a / actSum : 0; })),
      hint:'раз в квартал одним платежом, ДИР Сената!J169'},
