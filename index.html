@@ -870,8 +870,12 @@ OBJ.dogma = {
   {k:'m5', n:'Ограждение',                vol:1030.0, rate:1800, crew:1, stg:'vs36v'},
   {k:'m6', n:'Защита конструкций и сдача СКС', lump:1079266.21, u:'на объект', bal:1, scs:1}
 ],
+  /* проектирование и геодезия по статьям; сумма = ДИР Встройка!D129 */
+  prjRows:[['Проектирование', 744169.01, 'ДИР Встройка!D130'],
+           ['Геодезия',        267194.69, 'ДИР Встройка!D131'],
+           ['ППР',              10000.00, 'ДИР Встройка!D132']],
   /* сроки объекта: в файле их нет, поставлены условно (документ 21, Р7) */
-  schedule:{mountStart:2, mountMonths:7, warrantyMonths:12, crewPayLag:1, cond:1},
+  schedule:{mountStart:2, mountMonths:6, warrantyMonths:12, crewPayLag:1, cond:1},
   ARTICLES:[
   {k:'gar', n:'Гарантийное обслуживание', req:'mandatory', on:true, dir:OTH,
    rec:318088.91, acc:318088.91, src:'100 ₽/м², ПРАЙС_СМР_прочее', note:'обязательна на всех объектах'},
@@ -1083,11 +1087,14 @@ OBJ.univer = {
      /* на объекте процентовка переставлена руками: БЮДЖЕТ!G546:G550 */
      pStages:{frame:36, fill:30, adjOut:0, adjIn:22, sash:12, scs:0}, pStagesSrc:'БЮДЖЕТ!G546:G550, правка на объекте'},
     {k:'m2', n:'Сдача СКС дольщикам, М1 Сэтл',   vol:2853.13, rate:500, ip:0, scs:1, vat:1},
-    {k:'m3', n:'Услуги клининговой компании',    vol:2853.13, rate:160, ip:0},
+    {k:'m3', n:'Услуги клининговой компании',    vol:2853.13, rate:160, ip:0, fin:'handover'},
     {k:'m4', n:'Производственный инструмент',    vol:2853.13, rate:20,  ip:0},
     {k:'m5', n:'Расходы на проживание: бытовки 3 шт × 3 мес × 7 000', lump:63000, u:'на объект', ip:0},
     {k:'m6', n:'Расходы на получение средств: 57,6 % на ЗП и сдачу СКС, 8 % на ИП', auto:'funds', u:'считается', ip:0, vat:1}
   ],
+  prjRows:[['Проектирование', 485887.50, 'ДИР!D130'],
+           ['Геодезия',        236002.50, 'ДИР!D131'],
+           ['Док. обеспечение строительства ППР', 10000.00, 'ДИР!D132']],
   /* сроки объекта: в файле их нет (ДИР!D10 пусто), поставлены условно */
   schedule:{mountStart:2, mountMonths:6, warrantyMonths:12, crewPayLag:1, cond:1},
   /* шаг 6: статьи, свод ДИР!D143:D161 */
@@ -1160,15 +1167,15 @@ OBJ.univer = {
     {n:'Секция 7', s:401.77, t:'ВС-36 навесные, пилон наружу'}
   ],
   fin:{
-    months:['окт 26','ноя 26','дек 26','янв 27','фев 27','мар 27'],
+    months:['окт 26','ноя 26','дек 26','янв 27','фев 27','мар 27','апр 27','май 27'],
     rows:[
-      {k:'proj', name:'Проектирование и геодезия', d:[60,40,0,0,0,0],   hint:'предКМ и геодезия в начале'},
-      {k:'mat',  name:'Материалы и закупка',       d:[15,25,25,20,15,0], hint:'профиль и стекло под монтаж'},
-      {k:'man',  name:'Изготовление',              d:[10,25,25,25,15,0], hint:'по загрузке производства'},
-      {k:'mnt',  name:'Монтаж',                    d:[0,15,20,25,25,15], hint:'по процентовке этапов с шага монтажа'},
-      {k:'oth',  name:'Прочие расходы',            d:[17,17,17,17,16,16],hint:'бытовки, техника, вывоз мусора — помесячно'}
+      {k:'proj', name:'Проектирование и геодезия', d:[60,40,0,0,0,0,0,0],   hint:'предКМ и геодезия в начале'},
+      {k:'mat',  name:'Материалы и закупка',       d:[15,25,25,20,15,0,0,0], hint:'профиль и стекло под монтаж'},
+      {k:'man',  name:'Изготовление',              d:[10,25,25,25,15,0,0,0], hint:'по загрузке производства'},
+      {k:'mnt',  name:'Монтаж',                    d:[0,15,20,25,25,15,0,0], hint:'по процентовке этапов с шага монтажа'},
+      {k:'oth',  name:'Прочие расходы',            d:[17,17,17,17,16,16,0,0],hint:'бытовки, техника, вывоз мусора — помесячно'}
     ],
-    work:[5,15,20,25,20,15],
+    work:[5,15,20,25,20,15,0,0],
     avans:0, delay:30, hold:1,
     edited:{}, unit:'pct'
   },
@@ -2687,6 +2694,138 @@ function holdFlow(){
           irrevocable:heldSum - backSum, rev:rev};
 }
 
+/* ==================================================================
+   Дерево статей финплана: раздел → статья (документ 22, вопрос 2).
+   Планирование идёт по статьям, потому что внутри одного раздела у
+   статей разные сроки: сдача СКС и клининг идут после окончания всех
+   работ, а не вместе с монтажом. Раздел, у которого статьи не тронуты,
+   планируется одной строкой, проценты раздаются по статьям
+   пропорционально их суммам.
+   ================================================================== */
+function zeros(n){ var a = [], i; for (i = 0; i < n; i++) a.push(0); return a; }
+function range(a, b){ var out = [], i; for (i = a; i <= b; i++) out.push(i); return out; }
+function spreadOver(months, n){
+  var a = zeros(n);
+  if (!months.length) months = [0];
+  months.forEach(function(i){ a[Math.min(n - 1, Math.max(0, i))] += 100 / months.length; });
+  return a;
+}
+function atMonth(i, n){ var a = zeros(n); a[Math.min(n - 1, Math.max(0, i))] = 100; return a; }
+function byArr(src, n){
+  var t = src.reduce(function(a, b){ return a + b; }, 0), a = zeros(n), i;
+  for (i = 0; i < n; i++) a[i] = t ? src[i] / t * 100 : 0;
+  if (!t) a[0] = 100;
+  return a;
+}
+function treeState(){
+  if (!state.tree.acc) state.tree = {open:state.tree.open || {}, acc:{}, note:{}, sec:{}};
+  return state.tree;
+}
+
+function finTree(){
+  var n = nMonths(), k = factor(), w = mountWindow(), sc = sched();
+  var r = calc(state.m), acc = ksAccrual(), pay = ksPay(), revA = ksRevenue().all;
+  var mountM = range(w.a, w.b);
+  var prodM  = range(Math.max(0, w.a - 1), Math.min(n - 1, w.a + Math.floor(sc.mountMonths / 2) - 1));
+  var warrM  = range(Math.min(n - 1, w.handover), Math.min(n - 1, w.handover + sc.warrantyMonths - 1));
+  var supM   = supplyMonths();
+  var secs = [];
+  function sec(key, name, color){ var o = {k:key, name:name, color:color, items:[]}; secs.push(o); return o; }
+  function add(o, key, name, sum, src, rec, auto){
+    if (Math.abs(sum) < 0.005) return;
+    o.items.push({key:o.k + '-' + key, name:name, sum:sum, src:src, rec:rec, auto:auto});
+  }
+
+  var sPrj = sec('proj', 'Проектирование и геодезия', 'var(--ramp-4)');
+  (O.prjRows || []).forEach(function(row, i){
+    add(sPrj, 'p' + i, row[0], row[1] * k, row[2], atMonth(0, n), 'первый месяц');
+  });
+
+  var sMat = sec('mat', 'Материалы и закупка', 'var(--ramp-1)');
+  AC.forEach(function(x, i){
+    add(sMat, 'ac' + i, x.n, acNet(x) * k, 'прайс АС, колонка «' + COLS[x.col].name + '»',
+        spreadOver(supM, n), 'месяцы поставки');
+  });
+  BUY.forEach(function(x, i){
+    add(sMat, 'bu' + i, x.n, buySum(x) * k, x.k === 'metiz' ? 'плановая закупочная' : x.s,
+        spreadOver(supM, n), 'месяцы поставки');
+  });
+  TEND.forEach(function(x, i){
+    add(sMat, 'te' + i, x.n, (x.price ? x.q * x.price : 0) * k, x.why || 'цена поставщика',
+        spreadOver(supM, n), 'месяцы поставки');
+  });
+  add(sMat, 'rest', 'Заполнения и прочие материалы, не разложенные в прототипе', MAT_REST * k,
+      'остаток до сверки', spreadOver(supM, n), 'месяцы поставки');
+
+  var sMan = sec('man', 'Изготовление', 'var(--ramp-3)');
+  MAN.forEach(function(x, i){
+    add(sMan, 'm' + i, x.n, manRowSum(x) * k, O.manNote || 'прайс ОТК',
+        spreadOver(prodM, n), 'месяцы загрузки производства');
+  });
+
+  var sMnt = sec('mnt', 'Монтаж', 'var(--ramp-2)');
+  acc.stages.forEach(function(sg){
+    add(sMnt, 'st-' + sg.k, 'Этап: ' + sg.n, sg.sum * k, 'справочник монтажа, доля ' + pcs(sg.pct),
+        byArr(acc.byStage[sg.k], n), 'из выполнения по КС');
+  });
+  MOUNT.forEach(function(x, i){
+    if (x.crew) return;
+    var fin = x.fin || (x.scs ? 'handover' : (x.auto === 'funds' ? 'pay' : 'mount'));
+    var rec = fin === 'handover' ? atMonth(w.handover, n)
+            : fin === 'pay'      ? byArr(pay, n)
+            : spreadOver(mountM, n);
+    var auto = fin === 'handover' ? 'месяц после окончания монтажа'
+             : fin === 'pay'      ? 'по выплатам бригаде'
+             : 'равномерно по месяцам монтажа';
+    add(sMnt, 'mo' + i, x.n, mountRowSum(x) * k, 'шаг ' + STEP.mount, rec, auto);
+  });
+
+  var sOth = sec('oth', 'Прочие расходы', 'var(--ramp-5)');
+  ARTICLES.forEach(function(a, i){
+    if (!a.on || a.dir !== OTH || a.auto === 'genpct') return;
+    var rec, auto;
+    if (a.k === 'gar'){ rec = spreadOver(warrM, n); auto = 'после сдачи, равномерно на срок гарантии'; }
+    else if (a.k === 'genv' || a.k === 'gen'){ rec = byArr(revA, n); auto = 'по выполнению'; }
+    else { rec = spreadOver(mountM, n); auto = 'равномерно по месяцам монтажа'; }
+    add(sOth, 'a' + i, a.n, artAcc(a) * k, a.src || 'шаг ' + STEP.extras, rec, auto);
+  });
+  add(sOth, 'funds', 'Маркетинг и привлечённые средства', fundsTotal() * k, 'шаг ' + STEP.budget,
+      spreadOver(mountM, n), 'равномерно по месяцам монтажа');
+
+  if (r.genK){
+    var sGen = sec('gen', 'Генподрядные, процент от цены', 'var(--ramp-4)');
+    add(sGen, 'g', 'Генподрядные, процент от цены контракта', r.genK, 'ДИР!E173',
+        byArr(revA, n), 'по выполнению');
+  }
+
+  /* суммы разделов и рекомендация раздела, взвешенная по статьям */
+  var ts = treeState();
+  secs.forEach(function(o){
+    o.sum = o.items.reduce(function(a, x){ return a + x.sum; }, 0);
+    o.rec = zeros(n);
+    o.items.forEach(function(x){
+      x.rec.forEach(function(v, i){ o.rec[i] += o.sum ? v * x.sum / o.sum : 0; });
+    });
+    o.touched = o.items.some(function(x){ return !!ts.acc[x.key]; });
+    o.pct = o.touched ? null : (ts.sec[o.k] || o.rec);
+    o.items.forEach(function(x){
+      x.pct = ts.acc[x.key] ? ts.acc[x.key] : (o.touched ? x.rec : o.pct);
+      x.edited = !!ts.acc[x.key];
+      x.note = ts.note[x.key] || '';
+      x.arr = x.pct.map(function(v){ return x.sum * v / 100; });
+    });
+    o.arr = zeros(n);
+    o.items.forEach(function(x){ x.arr.forEach(function(v, i){ o.arr[i] += v; }); });
+  });
+  return secs;
+}
+/* расход по месяцам из дерева */
+function treeOutflow(){
+  var n = nMonths(), out = zeros(n);
+  finTree().forEach(function(o){ o.arr.forEach(function(v, i){ out[i] += v; }); });
+  return out;
+}
+
 var FIN_SUM = {
   proj: function(k){ return PRJ_VSTR * k; },
   mat:  function(k){ return matTotal() * k; },
@@ -2696,56 +2835,51 @@ var FIN_SUM = {
 };
 
 function finCalc(avans, delay){
-  var r = calc(state.m), K = r.K, n = FIN.months.length, k = factor();
+  var r = calc(state.m), K = r.K, n = nMonths();
   avans = (avans === undefined ? FIN.avans : avans);
   delay = (delay === undefined ? FIN.delay : delay);
 
-  var outRows = FIN.rows.map(function(row){
-    var sum = FIN_SUM[row.k](k);
-    return {name:row.name, k:row.k, hint:row.hint, sum:sum, d:row.d,
-            arr:row.d.map(function(p){ return sum * p / 100; })};
-  });
+  var secs = finTree();
+  var outflow = zeros(n), i;
+  secs.forEach(function(o){ o.arr.forEach(function(v, j){ outflow[j] += v; }); });
 
-  var act = FIN.work.map(function(p){ return K * p / 100; });
-  var actSum = act.reduce(function(a,b){ return a + b; }, 0);
-
-  var ovhArr = [], vatArr = [];
-  for (var i = 0; i < n; i++){
-    ovhArr.push(r.ovh / n);
-    vatArr.push(actSum ? r.vatOut * act[i] / actSum : 0);
-  }
-  outRows.push({name:'Накладные 10 %', k:'ovh', derived:true, sum:r.ovh, arr:ovhArr,
-                hint:'считаются от цены контракта, делятся ровно'});
-  outRows.push({name:'НДС к уплате', k:'vat', derived:true, sum:r.vatOut, arr:vatArr,
-                hint:'привязан к закрытым актам'});
+  /* акты закрываются выполнением по КС, оно же даёт выручку */
+  var rev = ksRevenue(), act = rev.all;
+  var actSum = act.reduce(function(a, b){ return a + b; }, 0);
   var tax = r.margin - r.profit;
-  outRows.push({name:'Налог на прибыль 25 %', k:'tax', derived:true, sum:tax,
-                arr:act.map(function(a){ return actSum ? tax * a / actSum : 0; }),
-                hint:'платится по мере закрытия актов'});
+  var extra = [
+    {name:'Накладные 10 %', k:'ovh', sum:r.ovh,
+     arr:act.map(function(){ return r.ovh / n; }), hint:'считаются от цены контракта, делятся ровно'},
+    {name:'НДС к уплате', k:'vat', sum:r.vatOut,
+     arr:act.map(function(a){ return actSum ? r.vatOut * a / actSum : 0; }), hint:'привязан к закрытым актам'},
+    {name:'Налог на прибыль 25 %', k:'tax', sum:tax,
+     arr:act.map(function(a){ return actSum ? tax * a / actSum : 0; }), hint:'платится по мере закрытия актов'}
+  ];
+  extra.forEach(function(e){ e.arr.forEach(function(v, j){ outflow[j] += v; }); });
 
-  var outflow = [], inflow = [], i2;
-  for (i2 = 0; i2 < n; i2++) outflow.push(0), inflow.push(0);
-  outRows.forEach(function(row){ row.arr.forEach(function(v, i){ outflow[i] += v; }); });
-
-  var av = K * avans / 100;
+  /* поступления: аванс сразу, акты за вычетом зачёта аванса и удержания
+     со сдвигом на отсрочку, плюс возврат удержания в свой месяц */
+  var hf = holdFlow();
+  var inflow = zeros(n), av = K * avans / 100, tail = 0;
   inflow[0] += av;
-  var share = 1 - avans / 100 - FIN.hold / 100;
-  var lag = delay / 30, li = Math.floor(lag), fr = lag - li, tail = 0;
-  act.forEach(function(a, i){
-    var v = a * share, i1 = i + li, iN = i + li + 1;
-    var p1 = v * (1 - fr), p2 = v * fr;
+  var lag = delay / 30, li = Math.floor(lag), fr = lag - li;
+  act.forEach(function(a, j){
+    var v = a * (1 - avans / 100) - hf.held[j];
+    var i1 = j + li, iN = j + li + 1, p1 = v * (1 - fr), p2 = v * fr;
     if (i1 < n) inflow[i1] += p1; else tail += p1;
     if (fr > 0){ if (iN < n) inflow[iN] += p2; else tail += p2; }
   });
+  hf.back.forEach(function(v, j){ inflow[j] += v; });
 
-  var bal = [], acc = 0, minB = Infinity, minI = 0;
+  var bal = [], accm = 0, minB = Infinity, minI = 0;
   for (var j = 0; j < n; j++){
-    acc += inflow[j] - outflow[j];
-    bal.push(acc);
-    if (acc < minB){ minB = acc; minI = j; }
+    accm += inflow[j] - outflow[j];
+    bal.push(accm);
+    if (accm < minB){ minB = accm; minI = j; }
   }
-  return {K:K, n:n, rows:outRows, act:act, inflow:inflow, outflow:outflow, bal:bal,
-          min:minB, minI:minI, tail:tail, avansSum:av, holdSum:K * FIN.hold / 100, r:r};
+  return {K:K, n:n, secs:secs, extra:extra, act:act, rev:rev, hold:hf,
+          inflow:inflow, outflow:outflow, bal:bal, min:minB, minI:minI, tail:tail,
+          avansSum:av, holdSum:hf.irrevocable, r:r};
 }
 
 function needAvans(){
@@ -2812,6 +2946,74 @@ var SCENARIOS = [
   {id:1, name:'Аванс 30 %',        a:30, d:30, sub:'зачёт аванса пропорционально в актах'},
   {id:2, name:'Отсрочка 45 дней',  a:0,  d:45, sub:'без аванса, оплата на 45-й день'}
 ];
+
+/* дерево статей по месяцам: раздел сворачивается до статей */
+function treePanel(F){
+  var n = nMonths(), ts = treeState(), pct = FIN.unit === 'pct';
+  var rows = '';
+  F.secs.forEach(function(o){
+    var open = !!ts.open[o.k];
+    var shown = o.sum ? o.arr.map(function(v){ return v / o.sum * 100; }) : zeros(n);
+    var tds = '', i;
+    for (i = 0; i < n; i++){
+      if (!pct) tds += '<td class="r num">' + f(o.arr[i]) + '</td>';
+      else if (o.touched) tds += '<td class="r num" style="color:var(--faint)">' + pcs(shown[i]) + '</td>';
+      else tds += '<td class="r"><input type="text" class="' + (ts.sec[o.k] ? '' : 'auto-in') +
+        '" data-sec="' + o.k + '|' + i + '" value="' + (Math.round(o.pct[i] * 10) / 10) +
+        '" aria-label="' + o.name + ', ' + FIN.months[i] + ', %"></td>';
+    }
+    rows += '<tr style="border-top:1px solid var(--line-strong)"><td class="nm">' +
+      '<button class="expander" data-tree="' + o.k + '" aria-expanded="' + open + '" aria-label="Статьи раздела">' +
+      (open ? '▾' : '▸') + '</button><b>' + o.name + '</b>' +
+      '<div style="font-size:10.5px;color:var(--faint)">статей ' + o.items.length + ' · ' +
+      (o.touched ? 'считается снизу вверх, статьи правлены' : 'планируется одной строкой, проценты раздаются по статьям пропорционально') +
+      '</div></td>' + tds + '<td class="r num">' + f(o.sum) + '</td><td></td></tr>';
+    if (!open) return;
+    o.items.forEach(function(x){
+      var itds = '';
+      for (i = 0; i < n; i++){
+        if (!pct) itds += '<td class="r num">' + f(x.arr[i]) + '</td>';
+        else itds += '<td class="r"><input type="text" class="' + (x.edited ? '' : 'auto-in') +
+          '" data-item="' + x.key + '|' + i + '" value="' + (Math.round(x.pct[i] * 10) / 10) +
+          '" aria-label="' + x.name + ', ' + FIN.months[i] + ', %"></td>';
+      }
+      rows += '<tr class="sub"><td class="nm" style="padding-left:26px">' + x.name +
+        '<div style="font-size:10px;color:var(--faint)">рекомендовано: ' + x.auto + ' · ' + x.src + '</div></td>' +
+        itds + '<td class="r num">' + f(x.sum) + '</td>' +
+        '<td><input type="text" class="' + (x.note ? '' : 'auto-in') + '" data-inote="' + x.key +
+        '" value="' + x.note + '" placeholder="примечание" aria-label="Примечание к статье"></td></tr>';
+    });
+  });
+  var extraRows = F.extra.map(function(e){
+    var tds = '';
+    for (var i = 0; i < n; i++) tds += '<td class="r num" style="color:var(--faint)">' + f(e.arr[i]) + '</td>';
+    return '<tr class="derived"><td class="nm">' + e.name +
+      '<div style="font-size:10.5px;color:var(--faint)">' + e.hint + '</div></td>' + tds +
+      '<td class="r num">' + f(e.sum) + '</td><td></td></tr>';
+  }).join('');
+  var totOut = '', totIn = '', totBal = '', totAct = '';
+  for (var j = 0; j < n; j++){
+    totOut += '<td class="r num">' + f(F.outflow[j]) + '</td>';
+    totIn  += '<td class="r num">' + f(F.inflow[j]) + '</td>';
+    totAct += '<td class="r num">' + f(F.act[j]) + '</td>';
+    totBal += '<td class="r num"' + (F.bal[j] < 0 ? ' style="color:var(--p-missing);font-weight:600"' : '') +
+              '>' + f(F.bal[j]) + '</td>';
+  }
+  return panel('Затраты по статьям и месяцам', pct ? 'значения в % от строки' : 'значения в ₽',
+    '<div class="tw months"><table><thead><tr><th>Раздел и статья</th>' + monthCols() +
+    '<th class="r">Всего, ₽</th><th>Примечание</th></tr></thead><tbody>' + rows + extraRows +
+    '<tr style="border-top:1px solid var(--line-strong)"><td class="nm"><b>Платежи, всего</b></td>' + totOut +
+      '<td class="r num">' + f(F.outflow.reduce(function(a, b){ return a + b; }, 0)) + '</td><td></td></tr>' +
+    '<tr class="inflow"><td class="nm">Выполнение по КС (акты)' +
+      '<div style="font-size:10.5px;color:var(--faint)">из блока выполнения выше</div></td>' + totAct +
+      '<td class="r num">' + f(F.K) + '</td><td></td></tr>' +
+    '<tr class="inflow"><td class="nm"><b>Поступления, всего</b>' +
+      '<div style="font-size:10.5px;color:var(--faint)">аванс плюс акты за вычетом зачёта и удержания, плюс возврат удержания</div></td>' +
+      totIn + '<td class="r num">' + f(F.inflow.reduce(function(a, b){ return a + b; }, 0)) + '</td><td></td></tr>' +
+    '<tr><td class="nm"><b>Остаток нарастающим итогом</b></td>' + totBal +
+      '<td class="r num">' + f(F.bal[n - 1]) + '</td><td></td></tr>' +
+    '</tbody></table></div>', true);
+}
 
 function monthCols(){ return FIN.months.map(function(m){ return '<th class="r">'+m+'</th>'; }).join(''); }
 function numCells(arr, cls){
@@ -2952,42 +3154,6 @@ views_8 = function(){
   var n = F.n;
   var pct = FIN.unit === 'pct';
 
-  var cellFor = function(row, i){
-    if (row.derived) return '<td class="r num" style="color:var(--faint)">' + f(row.arr[i]) + '</td>';
-    if (!pct) return '<td class="r num">' + f(row.arr[i]) + '</td>';
-    var key = row.k + '-' + i, ed = FIN.edited[key];
-    return '<td class="r"><input type="text" class="' + (ed ? '' : 'auto-in') + '" data-fin="' + key +
-      '" value="' + row.d[i] + '" aria-label="' + row.name + ', ' + FIN.months[i] + ', %"></td>';
-  };
-
-  var body = F.rows.map(function(row){
-    var s = row.d ? row.d.reduce(function(a, b){ return a + b; }, 0) : 100;
-    var tds = '';
-    for (var i = 0; i < n; i++) tds += cellFor(row, i);
-    return '<tr' + (row.derived ? ' class="derived"' : '') + '><td class="nm">' + row.name +
-      (s !== 100 ? ' <span class="bad">' + s + ' %</span>' : '') +
-      '<div style="font-size:10.5px;color:var(--faint)">' + row.hint + '</div></td>' +
-      tds + '<td class="r num">' + f(row.sum) + '</td></tr>';
-  }).join('');
-
-  var wtds = '';
-  for (var i = 0; i < n; i++){
-    var key = 'work-' + i;
-    wtds += pct
-      ? '<td class="r"><input type="text" class="' + (FIN.edited[key] ? '' : 'auto-in') + '" data-fin="' + key +
-        '" value="' + FIN.work[i] + '" aria-label="Выполнение, ' + FIN.months[i] + ', %"></td>'
-      : '<td class="r num">' + f(F.act[i]) + '</td>';
-  }
-  var wsum = FIN.work.reduce(function(a, b){ return a + b; }, 0);
-
-  var totOut = '', totIn = '', totBal = '';
-  for (var j = 0; j < n; j++){
-    totOut += '<td class="r num">' + f(F.outflow[j]) + '</td>';
-    totIn  += '<td class="r num">' + f(F.inflow[j]) + '</td>';
-    totBal += '<td class="r num"' + (F.bal[j] < 0 ? ' style="color:var(--p-missing);font-weight:600"' : '') +
-              '>' + f(F.bal[j]) + '</td>';
-  }
-
   var need = needAvans();
   var needTxt = need === null ? null : (need % 1 ? need.toFixed(1).replace('.', ',') : need.toFixed(0));
   var verdict = F.min >= 0
@@ -3012,8 +3178,6 @@ views_8 = function(){
         (cur ? ' disabled' : '') + '>' + (cur ? 'выбран' : 'применить') + '</button></td></tr>';
   }).join('');
 
-  var mth = FIN.months.map(function(m){ return '<th class="r">' + m + '</th>'; }).join('');
-
   return head('Финансовый план',
     'Затраты и выполнение раскладываются по месяцам стройки. Из выполнения получаются акты, из актов с учётом аванса, ' +
     'удержания и отсрочки — поступления. Разница нарастающим итогом показывает, где касса уходит в минус и какой аванс нужен.',
@@ -3032,24 +3196,13 @@ views_8 = function(){
     '<div><div class="eyebrow">Отсрочка оплаты, дней</div>' +
       '<div class="field" style="margin-top:6px"><input type="text" id="finDelay" value="' + FIN.delay + '"><span class="sum-unit">дн</span></div>' +
       '<div class="field-note">от подписания акта до денег</div></div>' +
-    '<div><div class="eyebrow">Удержание, %</div>' +
-      '<div class="field" style="margin-top:6px"><input type="text" id="finHold" value="' + FIN.hold + '"><span class="sum-unit">%</span></div>' +
-      '<div class="field-note">' + f(F.holdSum) + ' ₽, возврат через год после сдачи</div></div>' +
+    '<div><div class="eyebrow">Удержание</div>' +
+      '<div class="sum-big" style="font-size:20px;margin-top:6px">' + f(F.hold.heldSum) + ' ₽</div>' +
+      '<div class="field-note">возвратное ' + f(F.hold.backSum) + ' ₽, невозвратное ' + f(F.hold.irrevocable) +
+      ' ₽ · задаётся условиями договора выше</div></div>' +
     '</div>') +
 
-  panel('Затраты и выполнение по месяцам', pct ? 'значения в % от строки' : 'значения в ₽',
-    '<div class="tw months"><table><thead><tr><th>Строка</th>' + mth + '<th class="r">Всего, ₽</th></tr></thead>' +
-    '<tbody>' + body +
-    '<tr style="border-top:1px solid var(--line-strong)"><td class="nm"><b>Платежи, всего</b></td>' + totOut +
-      '<td class="r num">' + f(F.outflow.reduce(function(a, b){ return a + b; }, 0)) + '</td></tr>' +
-    '<tr class="inflow"><td class="nm">Выполнение (процентование)' + (wsum !== 100 ? ' <span class="bad">' + wsum + ' %</span>' : '') +
-      '<div style="font-size:10.5px;color:var(--faint)">' + (pct ? '% от цены контракта, закрывается актом' : 'сумма акта за месяц') +
-      '</div></td>' + wtds + '<td class="r num">' + f(F.K) + '</td></tr>' +
-    '<tr class="inflow"><td class="nm"><b>Поступления, всего</b>' +
-      '<div style="font-size:10.5px;color:var(--faint)">аванс плюс акты за вычетом зачёта и удержания</div></td>' + totIn +
-      '<td class="r num">' + f(F.inflow.reduce(function(a, b){ return a + b; }, 0)) + '</td></tr>' +
-    '<tr><td class="nm"><b>Остаток нарастающим итогом</b></td>' + totBal + '<td class="r num">' + f(F.bal[n - 1]) + '</td></tr>' +
-    '</tbody></table></div>', true) +
+  treePanel(F) +
 
   panel('Движение денежных средств', 'остаток нарастающим итогом, млн ₽',
     finChart(F) +
@@ -3248,6 +3401,11 @@ document.getElementById('stage').addEventListener('click', function(e){
     state.open[key] = !state.open[key];
     renderStage(); return;
   }
+  if ((t = e.target.closest('[data-tree]'))){
+    var ts = treeState();
+    ts.open[t.dataset.tree] = !ts.open[t.dataset.tree];
+    renderStage(); return;
+  }
   if (e.target.closest('[data-ks-mirror]')){ ksState().pay = {}; renderAll(); return; }
   if (e.target.closest('[data-ks-auto]')){ ksReset(); renderAll(); return; }
   if (e.target.closest('[data-add-art]')){
@@ -3356,6 +3514,31 @@ document.getElementById('stage').addEventListener('change', function(e){
   if (i.hasAttribute('data-fn')){
     x = num(i.value); state.funds = x === null ? 0 : x; renderAll(); return;
   }
+  if (d.sec){
+    x = num(i.value);
+    if (x === null || x < 0){ renderStage(); return; }
+    var sp = d.sec.split('|'), ts2 = treeState();
+    if (!ts2.sec[sp[0]]){
+      var cur = null;
+      finTree().forEach(function(o){ if (o.k === sp[0]) cur = o.pct.slice(); });
+      ts2.sec[sp[0]] = cur || zeros(nMonths());
+    }
+    ts2.sec[sp[0]][+sp[1]] = x;
+    renderAll(); return;
+  }
+  if (d.item){
+    x = num(i.value);
+    if (x === null || x < 0){ renderStage(); return; }
+    var ip2 = d.item.split('|'), ts3 = treeState();
+    if (!ts3.acc[ip2[0]]){
+      var cur2 = null;
+      finTree().forEach(function(o){ o.items.forEach(function(y){ if (y.key === ip2[0]) cur2 = y.pct.slice(); }); });
+      ts3.acc[ip2[0]] = cur2 || zeros(nMonths());
+    }
+    ts3.acc[ip2[0]][+ip2[1]] = x;
+    renderAll(); return;
+  }
+  if (d.inote){ treeState().note[d.inote] = i.value; renderAll(); return; }
   if (d.ks){
     x = num(i.value);
     if (x === null || x < 0 || x > 100){ renderStage(); return; }
