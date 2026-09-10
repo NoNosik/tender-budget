@@ -2056,6 +2056,7 @@ views_7 = function(){
       '<td class="mono" style="font-size:11px;color:var(--faint)">'+d[2]+'</td></tr>';
   }).join('');
 
+  var hfb = holdFlow();
   var dir = [
     ['Итого расходы', r.C, false],
     ['Наценка ' + pc(state.m), r.income, false],
@@ -2065,7 +2066,7 @@ views_7 = function(){
     ['Маржа', r.margin, true],
     ['Налог на прибыль 25 %', -(r.margin - r.profit), false],
     ['Чистая прибыль', r.profit, true],
-    ['Удержание '+pcs(HOLD*100)+' на год', -r.hold, false],
+    ['Удержание невозвратное, '+pcs(holdIrrevocablePct())+' (в ДИР)', -r.hold, false],
     ['Живые деньги на конец стройки', r.cf, true]
   ].map(function(d){
     return '<tr'+(d[2]?' style="font-weight:600"':'')+'><td'+(d[2]?'':' style="color:var(--muted);padding-left:22px"')+'>'+d[0]+'</td>'+
@@ -2087,6 +2088,12 @@ views_7 = function(){
     '</div>'+
     '<div class="note">Ставки живут в справочнике налогов, здесь их видно и нельзя править. Страна выбирается на шаге 1. '+
     'Ставка НДС берётся из параметра расчёта, поэтому смена 22 на 13 расчёт не сломает.</div>');
+
+  var holdNote = '<div class="note">Удержание по договору состоит из двух частей. В итоге участвует только '+
+    '<b>невозвратная</b>: '+pcs(holdIrrevocablePct())+' × цена контракта = '+f(r.hold)+' ₽. '+
+    '<span style="color:var(--muted)">Возвратная часть '+f(hfb.backSum)+' ₽ живёт только в движении денег '+
+    'и возвращается по условиям договора, её видно на шаге '+STEP.fin+'.</span> '+
+    'Условия задаются там же списком строк, а не одним полем.</div>';
 
   return head('Тендерный бюджет',
     'Итог всех шагов. Наценка крутится здесь же: видно, до какой цены можно падать в торге и где живые деньги на конец стройки уходят в минус.',
@@ -2131,7 +2138,8 @@ views_7 = function(){
     '<th class="r">₽/м²</th><th class="r">Доля</th></tr></thead><tbody>'+grows+'</tbody></table></div>') +
 
   panel('Расчёт до живых денег','', '<div class="tw"><table><thead><tr><th>Строка</th>'+
-    '<th class="r">Сумма, ₽</th><th class="r">₽/м²</th></tr></thead><tbody>'+dir+'</tbody></table></div>', true) +
+    '<th class="r">Сумма, ₽</th><th class="r">₽/м²</th></tr></thead><tbody>'+dir+'</tbody></table></div>'+
+    holdNote, true) +
 
   panel('Вариант «дно»','наценка '+pc(fm),
     '<div class="note">Ниже наценки <b>'+pc(fm)+'</b> живые деньги на конец стройки уходят в минус: удержание '+pcs(HOLD*100)+' заморожено на год, '+
@@ -3219,7 +3227,9 @@ views_8 = function(){
   panel('Что уходит за горизонт расчёта', '',
     '<div class="kv">' +
     '<div><span class="k">Поступления после ' + FIN.months[n - 1] + '</span><span class="v">' + f(F.tail) + ' ₽</span></div>' +
-    '<div><span class="k">Возврат удержания, через 12 мес после сдачи</span><span class="v">' + f(F.holdSum) + ' ₽</span></div>' +
+    '<div><span class="k">Удержано с КС за горизонт плана</span><span class="v">' + f(F.hold.heldSum) + ' ₽</span></div>' +
+    '<div><span class="k">Из них возвращено в плане</span><span class="v">' + f(F.hold.backSum) + ' ₽</span></div>' +
+    '<div><span class="k">Невозвратная часть, она же удержание в ДИР</span><span class="v">' + f(F.holdSum) + ' ₽</span></div>' +
     '<div><span class="k">Остаток на ' + FIN.months[n - 1] + ' плюс хвост и удержание</span><span class="v">' +
       f(F.bal[n - 1] + F.tail + F.holdSum) + ' ₽</span></div>' +
     '<div><span class="k">Чистая прибыль из итога, шаг ' + STEP.budget + '</span><span class="v">' + f(F.r.profit) + ' ₽</span></div>' +
@@ -3322,7 +3332,9 @@ function renderSummary(){
     document.getElementById('contract').value = f(r.K);
   document.getElementById('res').innerHTML =
     row('Накладные 10 %', -r.ovh) + row('НДС к уплате', -r.vatOut) +
-    row('Удержание '+pcs(HOLD*100), -r.hold) +
+    row('Удержание невозвратное', -r.hold) +
+    '<div><span class="k">Удержание возвратное</span><span class="v" style="color:var(--muted)">'+
+      f(-holdFlow().backSum)+' ₽</span></div>' +
     row('Чистая прибыль', r.profit, r.profit>=0?'pos':'neg') +
     row('Живые деньги', r.cf, r.cf>=0?'pos':'neg');
   document.getElementById('verdict').innerHTML = r.cf >= 0
