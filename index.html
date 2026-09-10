@@ -200,6 +200,8 @@ tr.sub td:first-child{padding-left:26px}
 .pill.bal{color:var(--muted);background:var(--sunken);border-color:var(--line-strong)}
 .bal-note{display:block;font-size:10.5px;color:var(--faint);margin-top:2px}
 
+input.bad-in{border-color:var(--p-missing);background:var(--p-missing-bg)}
+
 /* условные числа */
 .cond{border-bottom:1px dashed var(--p-manual);cursor:help}
 .cond-mark{font-family:var(--mono);font-size:9.5px;color:var(--p-manual);
@@ -752,6 +754,7 @@ var state = {
   form: {},
   open: {},         // раскрытые строки этапов монтажа
   tree: {},         // раскрытые разделы и статьи финплана
+  ks: null,         // выполнение по КС и выплаты монтажникам
   cmp: {}           // раскрытые разделы сравнения версий
 };
 
@@ -1259,7 +1262,7 @@ function saveObjectState(){
   Object.keys(PARAMS).forEach(function(k){ pv[k] = PARAMS[k].value; });
   O.saved = {step:state.step, m:state.m, block:state.block, target:state.target, metiz:state.metiz,
              dirForm:state.dirForm, marketing:state.marketing, funds:state.funds, open:state.open,
-             tree:state.tree, cmp:state.cmp, params:pv, paramEdited:paramEdited};
+             tree:state.tree, cmp:state.cmp, ks:state.ks, params:pv, paramEdited:paramEdited};
 }
 function loadObject(id){
   if (O && O.id === id) return;
@@ -1288,6 +1291,7 @@ function loadObject(id){
   state.funds = sv ? sv.funds : 0;
   state.open = sv ? sv.open : {};
   state.tree = sv ? sv.tree : {};
+  state.ks = sv ? sv.ks : null;
   state.cmp  = sv ? sv.cmp  : {};
   MAT_REST = 0;
   MAT_REST = MAT_VSTR - (priceTotal() + buyTotal() + tendTotal());
@@ -2181,6 +2185,26 @@ function comparePanel(r){
     'Колонка «по рабочему ОЗМ» это то, с чего стартует прототип; правки на шагах уходят от неё.</div>', true);
 }
 
+var payPending = null;
+function payNoteModal(i, v){
+  var mir = ksMirror()[i];
+  payPending = {i:i, v:v};
+  openModal(
+    '<div class="modal-head"><div><h2>Правка выплаты монтажникам · '+FIN.months[i]+'</h2>'+
+      '<div class="modal-sub">зеркально по КС было бы '+f(mir)+' ₽, ставим '+f(v)+' ₽</div></div>'+
+      '<button class="x" data-close aria-label="Закрыть">✕</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="field-lbl">Примечание, почему отклонились<span class="req-star">*</span></div>'+
+      '<input type="text" class="wide" id="payNote" value="" '+
+        'placeholder="например: по накопительной, согласовано с бригадой" aria-label="Примечание к правке">'+
+      '<div class="note">Без примечания правка не сохраняется. Отклонение '+
+      (v-mir>0?'+':'')+f(v-mir)+' ₽ останется видно в строке и в накопленном итоге.</div>'+
+    '</div>'+
+    '<div class="modal-foot"><span class="right">'+
+      '<button class="btn" data-close>Отмена</button>'+
+      '<button class="btn btn-primary" data-pay-ok>Сохранить с примечанием</button></span></div>');
+}
+
 function oldFormModal(){
   var k = factor(), M = mdl(), rr = calc(state.m);
   var rows = dirRows('old').map(function(d){
@@ -2507,6 +2531,162 @@ function suppliersView(){
    Раскладка по месяцам не переделывалась: ждём замечаний
    руководителей проектов со встречи 09.09.
    ================================================================== */
+/* ==================================================================
+   Выполнение по КС, начисления и выплаты монтажникам.
+   Документ 22, вопрос 3: заказчик принял КС на N % по этапу — те же
+   N % начисляются бригаде, со сдвигом по оплате. Проценты этапов из
+   справочника монтажа (ПРАЙС_СМР), сдвиг и доля ЗП/ИП — параметры
+   объекта. Отклонения правятся руками с обязательным примечанием.
+   ================================================================== */
+function nMonths(){ return FIN.months.length; }
+function mountWindow(){
+  var sc = sched(), n = nMonths();
+  var a = Math.max(0, Math.min(n - 1, sc.mountStart - 1));
+  var b = Math.max(a, Math.min(n - 1, a + sc.mountMonths - 1));
+  return {a:a, b:b, handover:Math.min(n - 1, b + 1)};
+}
+/* СМР-часть контракта: у Универа колонка «СМР» оферты (Расценки НС9!Q14),
+   у Догмы оферты нет, поэтому берём монтаж, изготовление и проектирование
+   в цене контракта пропорционально себестоимости. */
+function smrShare(){
+  if (O.offer){
+    var mat = 0, smr = 0;
+    O.offer.rows.forEach(function(r){ mat += r.q * r.mat; smr += r.q * r.smr; });
+    return (mat + smr) ? smr / (mat + smr) : 0;
+  }
+  var k = factor(), C0 = baseCost() * k;
+  return C0 ? (mountTotal() + manTotal() + PRJ_VSTR) * k / C0 : 0;
+}
+function smrExact(){ return !!O.offer; }
+/* автоматическое выполнение: этапы идут друг за другом по месяцам монтажа,
+   значения нарастающим итогом, последний месяц окна даёт 100 % */
+function ksAuto(){
+  var W = mountStageWeights().filter(function(s){ return s.pct > 0.0005; });
+  var w = mountWindow(), n = nMonths(), out = {};
+  W.forEach(function(s, j){
+    var arr = [], i;
+    if (s.k === 'scs'){
+      for (i = 0; i < n; i++) arr.push(i >= w.handover ? 100 : 0);
+    } else {
+      var off = Math.floor(j * Math.max(0, w.b - w.a) / Math.max(1, W.length));
+      var st = Math.min(w.b, w.a + off);
+      for (i = 0; i < n; i++){
+        if (i < st) arr.push(0);
+        else if (i >= w.b) arr.push(100);
+        else arr.push(Math.round((i - st + 1) / (w.b - st + 1) * 1000) / 10);
+      }
+    }
+    out[s.k] = arr;
+  });
+  return out;
+}
+function ksState(){
+  if (!state.ks) state.ks = {done:ksAuto(), edited:{}, pay:{}};
+  return state.ks;
+}
+function ksReset(){ state.ks = {done:ksAuto(), edited:{}, pay:{}}; }
+/* прирост выполнения этапа за месяц, в долях */
+function ksDelta(k, i){
+  var a = ksState().done[k] || [];
+  var prev = i ? (a[i - 1] || 0) : 0;
+  return ((a[i] || 0) - prev) / 100;
+}
+/* начисление бригаде помесячно и по этапам */
+function ksAccrual(){
+  var W = mountStageWeights().filter(function(s){ return s.pct > 0.0005; });
+  var n = nMonths(), out = [], byStage = {}, i;
+  for (i = 0; i < n; i++) out.push(0);
+  W.forEach(function(s){
+    byStage[s.k] = [];
+    for (i = 0; i < n; i++){
+      var v = ksDelta(s.k, i) * s.sum;
+      byStage[s.k].push(v); out[i] += v;
+    }
+  });
+  return {months:out, byStage:byStage, stages:W};
+}
+/* доля ИП по объекту: взвешена по бригадным строкам */
+function crewIpShare(){
+  var tot = crewTotal(), ip = 0;
+  crewRows().forEach(function(r){ ip += mountRowSum(r) * ipShare(r); });
+  return tot ? ip / tot : 0;
+}
+/* зеркальная выплата: начисление, сдвинутое на crewPayLag месяцев */
+function ksMirror(){
+  var acc = ksAccrual().months, n = nMonths(), lag = sched().crewPayLag, out = [], i;
+  for (i = 0; i < n; i++) out.push(0);
+  acc.forEach(function(v, i){
+    var t = Math.min(n - 1, i + lag);
+    out[t] += v;
+  });
+  return out;
+}
+function ksPay(){
+  var mir = ksMirror(), st = ksState(), out = [];
+  mir.forEach(function(v, i){
+    var e = st.pay[i];
+    out.push(e ? e.v : v);
+  });
+  return out;
+}
+/* выручка помесячно: СМР по выполнению, материалы по месяцам поставки */
+function ksRevenue(){
+  var r = calc(state.m), K = r.K, n = nMonths();
+  var share = smrShare(), smrTot = K * share, matTot = K - smrTot;
+  var W = mountStageWeights().filter(function(s){ return s.pct > 0.0005; });
+  var tot = crewTotal();
+  var smr = [], mat = [], i;
+  for (i = 0; i < n; i++){ smr.push(0); mat.push(0); }
+  W.forEach(function(s){
+    var part = tot ? s.sum / tot : 0;
+    for (i = 0; i < n; i++) smr[i] += ksDelta(s.k, i) * part * smrTot;
+  });
+  var sup = supplyMonths();
+  sup.forEach(function(i){ mat[i] += matTot / sup.length; });
+  var all = [];
+  for (i = 0; i < n; i++) all.push(smr[i] + mat[i]);
+  return {smr:smr, mat:mat, all:all, K:K, smrTot:smrTot, matTot:matTot, share:share};
+}
+/* месяцы поставки материалов: поставки начинаются за два месяца до монтажа
+   и идут до предпоследнего месяца монтажа */
+function supplyMonths(){
+  var w = mountWindow(), n = nMonths(), out = [];
+  var a = Math.max(0, w.a - 2), b = Math.max(a, Math.min(n - 1, Math.max(w.a, w.b - 1)));
+  for (var i = a; i <= b; i++) out.push(i);
+  return out.length ? out : [0];
+}
+
+/* ---- удержание по условиям договора ------------------------------- */
+function holdBaseVal(h, rev, i){
+  if (h.base === 'smr') return rev.smr[i];
+  if (h.base === 'materials') return rev.mat[i];
+  return rev.all[i];
+}
+function holdFlow(){
+  var rev = ksRevenue(), n = nMonths(), w = mountWindow(), sc = sched();
+  var held = [], back = [], i;
+  for (i = 0; i < n; i++){ held.push(0); back.push(0); }
+  var terms = holdTerms().map(function(h){
+    var arr = [], sum = 0;
+    for (i = 0; i < n; i++){
+      var v = holdBaseVal(h, rev, i) * h.pct / 100;
+      arr.push(v); sum += v; held[i] += v;
+    }
+    var rel = h.release === 'after_ks' ? 'ks'
+            : h.release === 'after_handover' ? w.handover
+            : h.release === 'after_warranty' ? w.handover + sc.warrantyMonths
+            : null;
+    var returned = 0;
+    if (rel === 'ks'){ arr.forEach(function(v, j){ back[j] += v; }); returned = sum; }
+    else if (typeof rel === 'number' && rel < n){ back[rel] += sum; returned = sum; }
+    return {h:h, arr:arr, sum:sum, rel:rel, returned:returned};
+  });
+  var heldSum = held.reduce(function(a, b){ return a + b; }, 0);
+  var backSum = back.reduce(function(a, b){ return a + b; }, 0);
+  return {terms:terms, held:held, back:back, heldSum:heldSum, backSum:backSum,
+          irrevocable:heldSum - backSum, rev:rev};
+}
+
 var FIN_SUM = {
   proj: function(k){ return PRJ_VSTR * k; },
   mat:  function(k){ return matTotal() * k; },
@@ -2633,6 +2813,140 @@ var SCENARIOS = [
   {id:2, name:'Отсрочка 45 дней',  a:0,  d:45, sub:'без аванса, оплата на 45-й день'}
 ];
 
+function monthCols(){ return FIN.months.map(function(m){ return '<th class="r">'+m+'</th>'; }).join(''); }
+function numCells(arr, cls){
+  return arr.map(function(v){ return '<td class="r num"'+(cls?' style="'+cls+'"':'')+'>'+f(v)+'</td>'; }).join('');
+}
+
+/* блок «Выполнение по КС»: проценты по этапам, выручка, удержание,
+   начисления и выплаты монтажникам (документ 22, вопрос 3) */
+function ksPanel(){
+  var n = nMonths(), st = ksState(), acc = ksAccrual(), rev = ksRevenue();
+  var mir = ksMirror(), pay = ksPay(), hf = holdFlow(), sc = sched();
+  var ipSh = crewIpShare();
+  var W = acc.stages;
+
+  var srows = W.map(function(sg){
+    var tds = '';
+    for (var i = 0; i < n; i++){
+      var key = sg.k + '-' + i, ed = st.edited[key];
+      tds += '<td class="r"><input type="text" class="'+(ed?'':'auto-in')+'" data-ks="'+key+
+        '" value="'+(st.done[sg.k][i])+'" aria-label="'+sg.n+', '+FIN.months[i]+', % выполнения"></td>';
+    }
+    return '<tr><td class="nm">'+sg.n+
+      '<div style="font-size:10.5px;color:var(--faint)">доля этапа '+pcs(sg.pct)+' · '+f(sg.sum)+' ₽</div></td>'+
+      tds+'<td class="r num">'+f(sg.sum)+'</td></tr>';
+  }).join('');
+
+  var payTds = '';
+  for (var i = 0; i < n; i++){
+    var e = st.pay[i], off = e ? e.v - mir[i] : 0;
+    payTds += '<td class="r"><input type="text" class="'+(e?'':'auto-in')+'" data-pay="'+i+
+      '" value="'+Math.round(pay[i])+'" aria-label="Выплата монтажникам, '+FIN.months[i]+'">'+
+      (e ? '<div style="font-size:10px;color:var(--faint)">зеркально было бы '+f(mir[i])+'</div>'+
+           '<div style="font-size:10px;color:'+(off<0?'var(--p-missing)':'var(--p-auto)')+'">'+
+           (off>0?'+':'')+f(off)+'</div>' : '')+'</td>';
+  }
+  var offTotal = pay.reduce(function(a,v,j){ return a + (v - mir[j]); }, 0);
+  var edited = Object.keys(st.pay).length;
+
+  var wnd = mountWindow();
+  var stagesSum = W.reduce(function(a, s){ return a + s.pct; }, 0);
+
+  return panel('Выполнение по КС', 'проценты нарастающим итогом, доли этапов из справочника монтажа',
+    '<div class="grid3" style="background:none;gap:16px;margin-bottom:14px">'+
+    '<div><div class="field-lbl">Монтаж начинается с месяца</div>'+
+      '<input type="text" class="'+(sc.cond?'':'auto-in')+'" data-sched="mountStart" value="'+sc.mountStart+'" aria-label="Месяц начала монтажа">'+
+      '<div class="field-note">'+FIN.months[wnd.a]+' — '+FIN.months[wnd.b]+
+      (sc.cond ? ' · '+condMark('сроков в файле нет') : '')+'</div></div>'+
+    '<div><div class="field-lbl">Месяцев монтажа</div>'+
+      '<input type="text" class="'+(sc.cond?'':'auto-in')+'" data-sched="mountMonths" value="'+sc.mountMonths+'" aria-label="Месяцев монтажа">'+
+      '<div class="field-note">сдача '+FIN.months[wnd.handover]+'</div></div>'+
+    '<div><div class="field-lbl">Гарантия, месяцев</div>'+
+      '<input type="text" class="'+(sc.cond?'':'auto-in')+'" data-sched="warrantyMonths" value="'+sc.warrantyMonths+'" aria-label="Гарантия, месяцев">'+
+      '<div class="field-note">от месяца сдачи</div></div>'+
+    '<div><div class="field-lbl">Сдвиг оплаты бригаде, месяцев</div>'+
+      '<input type="text" class="auto-in" data-sched="crewPayLag" value="'+sc.crewPayLag+'" aria-label="Сдвиг оплаты бригаде">'+
+      '<div class="field-note">'+cond('после оплаты заказчиком','Р6 не отвечен: после подписания или после оплаты')+'</div></div>'+
+    '</div>'+
+
+    '<div class="tw months"><table><thead><tr><th>Этап</th>'+monthCols()+'<th class="r">Всего, ₽</th></tr></thead>'+
+    '<tbody>'+srows+
+    '<tr style="border-top:1px solid var(--line-strong)"><td class="nm"><b>Выручка СМР</b>'+
+      '<div style="font-size:10.5px;color:var(--faint)">'+(smrExact()
+        ? 'колонка «СМР» оферты, Расценки НС9!Q14'
+        : cond('монтаж, изготовление и проектирование в цене','у объекта нет оферты, СМР-часть выведена пропорционально'))+
+      ' · доля '+pcs(rev.share*100)+'</div></td>'+
+      numCells(rev.smr)+'<td class="r num">'+f(rev.smrTot)+'</td></tr>'+
+    '<tr><td class="nm">Выручка материалы<div style="font-size:10.5px;color:var(--faint)">по месяцам поставки</div></td>'+
+      numCells(rev.mat)+'<td class="r num">'+f(rev.matTot)+'</td></tr>'+
+    '<tr class="inflow"><td class="nm"><b>Выручка, всего</b></td>'+numCells(rev.all)+
+      '<td class="r num">'+f(rev.K)+'</td></tr>'+
+    '<tr><td class="nm">Удержано с КС<div style="font-size:10.5px;color:var(--faint)">по условиям договора</div></td>'+
+      numCells(hf.held, 'color:var(--p-missing)')+'<td class="r num">'+f(hf.heldSum)+'</td></tr>'+
+    '<tr><td class="nm">Возврат удержания</td>'+numCells(hf.back, 'color:var(--p-auto)')+
+      '<td class="r num">'+f(hf.backSum)+'</td></tr>'+
+    '<tr style="border-top:1px solid var(--line-strong)"><td class="nm"><b>Начислено бригаде</b>'+
+      '<div style="font-size:10.5px;color:var(--faint)">тот же процент этапа от суммы монтажа шага '+STEP.mount+'</div></td>'+
+      numCells(acc.months)+'<td class="r num">'+f(crewTotal())+'</td></tr>'+
+    '<tr><td class="nm">в том числе зарплатный проект</td>'+
+      numCells(acc.months.map(function(v){ return v * (1 - ipSh); }))+
+      '<td class="r num">'+f(crewTotal()*(1-ipSh))+'</td></tr>'+
+    '<tr><td class="nm">в том числе ИП</td>'+
+      numCells(acc.months.map(function(v){ return v * ipSh; }))+
+      '<td class="r num">'+f(crewTotal()*ipSh)+'</td></tr>'+
+    '<tr><td class="nm"><b>Выплаты монтажникам</b>'+
+      '<div style="font-size:10.5px;color:var(--faint)">по умолчанию зеркально КС со сдвигом '+sc.crewPayLag+' мес</div></td>'+
+      payTds+'<td class="r num">'+f(pay.reduce(function(a,b){ return a+b; },0))+'</td></tr>'+
+    '</tbody></table></div>'+
+
+    '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px">'+
+    '<button class="btn btn-sm" data-ks-mirror>Вернуть к зеркалу</button>'+
+    '<span class="field-note">правок помесячно: '+edited+
+      (edited ? ' · накопленное отклонение '+(offTotal>0?'+':'')+f(offTotal)+' ₽' : '')+'</span>'+
+    '<button class="btn btn-sm" data-ks-auto>Пересчитать выполнение автоматом</button>'+
+    '<span class="field-note">сумма долей этапов '+pcs(stagesSum)+'</span>'+
+    '</div>'+
+    '<div class="note">Заказчик принял КС на N % по этапу — те же N % начисляются бригаде. '+
+    'Ручная правка выплаты требует примечания: без него правка не сохраняется, а рядом остаётся видно, '+
+    'сколько было бы зеркально и на сколько ушли.</div>');
+}
+
+/* условия удержания: список строк договора */
+function holdPanel(readOnly){
+  var hf = holdFlow(), r = calc(state.m);
+  var rows = holdTerms().map(function(h, i){
+    var t = hf.terms[i];
+    return '<tr><td class="r">'+(readOnly
+        ? pcs(h.pct)
+        : '<input type="text" class="'+(h.edited?'':'auto-in')+'" data-hold="'+i+'|pct" value="'+h.pct+'" aria-label="Процент удержания">')+'</td>'+
+      '<td>'+(readOnly ? HOLD_BASE[h.base]
+        : '<select class="'+(h.edited?'':'auto-in')+'" data-hold="'+i+'|base" aria-label="База удержания">'+
+          Object.keys(HOLD_BASE).map(function(b){
+            return '<option value="'+b+'"'+(b===h.base?' selected':'')+'>'+HOLD_BASE[b]+'</option>'; }).join('')+
+          '</select>')+'</td>'+
+      '<td>'+(readOnly ? HOLD_REL[h.release]
+        : '<select class="'+(h.edited?'':'auto-in')+'" data-hold="'+i+'|release" aria-label="Когда возвращается">'+
+          Object.keys(HOLD_REL).map(function(b){
+            return '<option value="'+b+'"'+(b===h.release?' selected':'')+'>'+HOLD_REL[b]+'</option>'; }).join('')+
+          '</select>')+'</td>'+
+      '<td class="r num">'+f(t.sum)+'</td>'+
+      '<td>'+(t.returned ? 'возвращается '+(t.rel==='ks'?'сразу':FIN.months[t.rel]) : 'за горизонтом плана')+'</td>'+
+      '<td>'+(h.inDir ? '<span class="pill p-auto">в ДИР</span>' : '<span class="pill p-tender">только движение денег</span>')+'</td>'+
+      '<td class="mono" style="font-size:11px;color:var(--muted)">'+h.src+'</td></tr>';
+  }).join('');
+  return panel('Удержание по договору', 'заказчик «'+state.form.customer+'»',
+    '<div class="tw"><table><thead><tr><th class="r">Процент</th><th>База</th><th>Когда возвращается</th>'+
+    '<th class="r">Сумма, ₽</th><th>Возврат</th><th>Итог шага '+STEP.budget+'</th><th>Источник</th></tr></thead>'+
+    '<tbody>'+rows+'</tbody>'+
+    '<tfoot><tr><td colspan="3">Удержано за горизонт плана</td><td class="r num">'+f(hf.heldSum)+'</td>'+
+    '<td colspan="3">возвращено '+f(hf.backSum)+' ₽, невозвратное '+f(hf.irrevocable)+' ₽</td></tr></tfoot>'+
+    '</table></div>'+
+    '<div class="note">В итоге шага '+STEP.budget+' участвует только невозвратная часть, она же <b>HOLD</b> объекта: '+
+    pcs(holdIrrevocablePct())+' × цена контракта = '+f(r.hold)+' ₽. Возвратная часть живёт только в движении денег. '+
+    'Связка временная, пока не отвечен Р1: в ДИР Универа стоит 1 %, а в договоре 9 + 1.</div>', true);
+}
+
 views_8 = function(){
   var F = finCalc();
   var n = F.n;
@@ -2704,8 +3018,11 @@ views_8 = function(){
     'Затраты и выполнение раскладываются по месяцам стройки. Из выполнения получаются акты, из актов с учётом аванса, ' +
     'удержания и отсрочки — поступления. Разница нарастающим итогом показывает, где касса уходит в минус и какой аванс нужен.',
     '<button class="btn" data-fin-unit>' + (pct ? 'Показать ₽' : 'Показать %') + '</button>') +
-  what('Раскладка по месяцам пока стоит на процентах. Это заглушка: 09.09 встреча с руководителями проектов, ' +
-       'они предложат своё видение — процент, опросник или график производства работ. До их замечаний шаг не переделывается.') +
+  what('Выполнение по КС первично: по месяцам ставится процент выполнения по этапам монтажа, из него считаются выручка, '+
+       'удержание с каждой КС и начисление бригаде. Выплаты монтажникам по умолчанию зеркальны процентовке с заказчиком, '+
+       'отклонение правится руками с примечанием. Удержание задаётся условиями договора, а не одним полем.') +
+  ksPanel() +
+  holdPanel(false) +
 
   panel('Условия по договору', 'охряные поля меняются в торге',
     '<div class="grid3" style="gap:16px;background:none">' +
@@ -2931,6 +3248,8 @@ document.getElementById('stage').addEventListener('click', function(e){
     state.open[key] = !state.open[key];
     renderStage(); return;
   }
+  if (e.target.closest('[data-ks-mirror]')){ ksState().pay = {}; renderAll(); return; }
+  if (e.target.closest('[data-ks-auto]')){ ksReset(); renderAll(); return; }
   if (e.target.closest('[data-add-art]')){
     ARTICLES.push({k:'new'+(ARTICLES.length+1), n:'Новая статья', req:'optional', on:false, dir:OTH,
                    rec:0, acc:0, src:'заведена руками ' + TODAY, note:'опишите статью и поставьте сумму'});
@@ -3037,6 +3356,33 @@ document.getElementById('stage').addEventListener('change', function(e){
   if (i.hasAttribute('data-fn')){
     x = num(i.value); state.funds = x === null ? 0 : x; renderAll(); return;
   }
+  if (d.ks){
+    x = num(i.value);
+    if (x === null || x < 0 || x > 100){ renderStage(); return; }
+    var kp = d.ks.split('-'), ki = +kp[1], st = ksState();
+    if (st.done[kp[0]]){ st.done[kp[0]][ki] = x; st.edited[d.ks] = 1; }
+    renderAll(); return;
+  }
+  if (d.pay !== undefined && i.hasAttribute('data-pay')){
+    x = num(i.value);
+    if (x === null || x < 0){ renderStage(); return; }
+    payNoteModal(+d.pay, x); return;
+  }
+  if (d.sched){
+    x = num(i.value);
+    if (x === null || x < 0){ renderStage(); return; }
+    O.schedule[d.sched] = x;
+    if (d.sched !== 'crewPayLag') ksReset();
+    renderAll(); return;
+  }
+  if (d.hold){
+    var hp = d.hold.split('|'), h = holdTerms()[+hp[0]];
+    if (!h) return;
+    if (hp[1] === 'pct'){ x = num(i.value); if (x === null || x < 0){ renderStage(); return; } h.pct = x; }
+    else h[hp[1]] = i.value;
+    h.edited = 1;
+    renderAll(); return;
+  }
   if (d.fin){
     x = num(i.value);
     if (x === null || x < 0){ renderStage(); return; }
@@ -3088,6 +3434,17 @@ document.getElementById('overlay').addEventListener('click', function(e){
   if (e.target.closest('[data-close]')){ closeModal(); return; }
   if ((t = e.target.closest('[data-send-req]'))){ saveRequests(t.dataset.sendReq, 'sent'); return; }
   if ((t = e.target.closest('[data-save-req]'))){ saveRequests(t.dataset.saveReq, 'draft'); return; }
+  if (e.target.closest('[data-pay-ok]')){
+    var note = document.getElementById('payNote');
+    var txt = note ? String(note.value).trim() : '';
+    if (!txt){
+      if (note){ note.classList.add('bad-in'); note.focus(); }
+      return;                       // без примечания правка не сохраняется
+    }
+    if (payPending) ksState().pay[payPending.i] = {v:payPending.v, note:txt};
+    payPending = null;
+    closeModal(); renderAll(); return;
+  }
   if ((t = e.target.closest('[data-req-st]'))){
     var v = t.dataset.reqSt.split('|'), id = +v[0];
     REQUESTS.forEach(function(r){
