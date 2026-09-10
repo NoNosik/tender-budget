@@ -350,6 +350,68 @@ input[type=range]{width:100%;margin:8px 0 0;accent-color:var(--ink);background:t
 .legend2 span{display:flex;gap:6px;align-items:center;font-size:11px;color:var(--muted)}
 .legend2 i{width:10px;height:10px;border-radius:2px;flex:none}
 
+
+/* ---------- лента: восемь разделов подряд ---------- */
+.lenta-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.lenta-bar .hint{font-size:11.5px;color:var(--faint)}
+.lsec{margin-bottom:26px;scroll-margin-top:10px}
+.lsec-head{display:flex;align-items:center;gap:11px;padding:6px 0 11px;
+  border-bottom:1px solid var(--line-strong);margin-bottom:16px}
+.lsec-dot{width:26px;height:26px;box-shadow:none;font-size:11.5px}
+.lsec-name{font-size:15px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+.lsec-val{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-left:auto;text-align:right}
+.lsec-val.attn{color:var(--p-manual)}
+.lsec-dot[data-st]{color:var(--surface)}
+.lsec-dot[data-st="done"]{background:var(--p-auto);border-color:var(--p-auto)}
+.lsec-dot[data-st="manual"]{background:var(--p-manual);border-color:var(--p-manual)}
+.lsec-dot[data-st="tender"]{background:var(--p-tender);border-color:var(--p-tender)}
+.lsec-dot[data-st="missing"]{background:var(--p-missing);border-color:var(--p-missing)}
+.lsec[data-fold="1"] .lsec-body{display:none}
+.lsec[data-fold="1"] .lsec-head{border-bottom-color:var(--line);margin-bottom:0}
+.lsec-gate{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--p-missing);
+  padding:9px 14px;background:var(--p-missing-bg);border:1px solid var(--p-missing-line);
+  border-radius:6px;margin-bottom:14px}
+
+/* вертикальный трекер в правой колонке */
+.railv{list-style:none;margin:0 0 12px;padding:0}
+.railv li+li{margin-top:1px}
+.railv button{width:100%;display:flex;align-items:center;gap:9px;background:none;border:0;
+  padding:5px 6px;cursor:pointer;border-radius:5px;text-align:left}
+.railv button:hover{background:var(--sunken)}
+.railv .rdot{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;flex:none;
+  font-family:var(--mono);font-size:9.5px;line-height:1;
+  background:var(--surface);border:2px solid var(--line-strong);color:var(--faint)}
+.railv li[data-st] .rdot{color:var(--surface)}
+.railv li[data-st="done"] .rdot{background:var(--p-auto);border-color:var(--p-auto)}
+.railv li[data-st="manual"] .rdot{background:var(--p-manual);border-color:var(--p-manual)}
+.railv li[data-st="tender"] .rdot{background:var(--p-tender);border-color:var(--p-tender)}
+.railv li[data-st="missing"] .rdot{background:var(--p-missing);border-color:var(--p-missing)}
+.railv .rname{font-size:12px;color:var(--muted);min-width:0;flex:1 1 auto}
+.railv .rval{font-family:var(--mono);font-size:10px;color:var(--faint);white-space:nowrap}
+.railv .rval.attn{color:var(--p-manual)}
+.railv li.here .rname{font-weight:600;color:var(--ink)}
+.railv li.here{background:var(--sunken);border-radius:5px}
+.legend-v{flex-direction:column;gap:5px;margin-bottom:16px;padding-top:12px;border-top:1px solid var(--line)}
+#railWrap{padding-bottom:4px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.summary.lenta{max-height:100vh;overflow-y:auto;overscroll-behavior:contain}
+.sum-more{margin-top:6px}
+.sum-more>summary{list-style:none;cursor:pointer;font-family:var(--mono);font-size:10.5px;
+  color:var(--faint);padding:4px 0}
+.sum-more>summary::-webkit-details-marker{display:none}
+.sum-more>summary::after{content:" ▸"}
+.sum-more[open]>summary::after{content:" ▾"}
+.sum-note{font-size:10.5px;color:var(--faint);padding:4px 0}
+
+@media (max-width:1080px){
+  .summary.lenta{max-height:none;overflow:visible}
+  #railWrap{position:sticky;top:0;z-index:3;background:var(--surface);margin:0 -20px 14px;
+    padding:8px 20px;border-bottom:1px solid var(--line)}
+  .railv{display:flex;gap:4px;margin:0;overflow-x:auto}
+  .railv li+li{margin-top:0}
+  .railv .rname,.railv .rval,.legend-v{display:none}
+  .railv button{padding:3px}
+}
+
 @media (max-width:1080px){
   .shell{grid-template-columns:minmax(0,1fr)}
   .summary{position:static;min-height:0;border:0;border-top:1px solid var(--line)}
@@ -369,6 +431,10 @@ input[type=range]{width:100%;margin:8px 0 0;accent-color:var(--ink);background:t
     <span id="blockPick"></span>
   </nav>
   <div class="proto">
+    <span class="seg sm" id="viewPick" role="group" aria-label="Формат интерфейса">
+      <button data-view="steps" aria-pressed="true">По шагам</button>
+      <button data-view="lenta" aria-pressed="false">Лентой</button>
+    </span>
     <button class="btn" data-nav="list">Все объекты</button>
     <button class="btn" data-nav="sup">Поставщики</button>
     <span class="tag">прототип</span>
@@ -403,6 +469,7 @@ input[type=range]{width:100%;margin:8px 0 0;accent-color:var(--ink);background:t
   <main class="stage" id="stage"></main>
 
   <aside class="summary" id="summary" aria-label="Итог">
+    <div id="railWrap" hidden></div>
     <div class="sum-block">
       <span class="eyebrow">Себестоимость</span>
       <div class="sum-big" id="cost"></div>
@@ -770,6 +837,9 @@ function plPos(n){
 /* ---- состояние ---------------------------------------------------- */
 var state = {
   step: STEP.price,
+  view: 'steps',    // steps | lenta, второй формат интерфейса, С3
+  fold: {},         // свёрнутые разделы ленты
+  sumMore: false,   // «подробно» в итоге ленты
   m: 0.3966571,
   mode: 'object',
   block: 'all',
@@ -1321,7 +1391,7 @@ function saveObjectState(){
   Object.keys(PARAMS).forEach(function(k){ pv[k] = PARAMS[k].value; });
   O.saved = {step:state.step, m:state.m, block:state.block, target:state.target, metiz:state.metiz,
              dirForm:state.dirForm, marketing:state.marketing, funds:state.funds, open:state.open,
-             tree:state.tree, cmp:state.cmp, ks:state.ks, params:pv, paramEdited:paramEdited};
+             fold:state.fold, tree:state.tree, cmp:state.cmp, ks:state.ks, params:pv, paramEdited:paramEdited};
 }
 function loadObject(id){
   if (O && O.id === id) return;
@@ -1349,6 +1419,7 @@ function loadObject(id){
   state.marketing = sv ? sv.marketing : 0;
   state.funds = sv ? sv.funds : 0;
   state.open = sv ? sv.open : {};
+  state.fold = sv && sv.fold ? sv.fold : {};
   state.tree = sv ? sv.tree : {};
   state.ks = sv ? sv.ks : null;
   state.cmp  = sv ? sv.cmp  : {};
@@ -1421,6 +1492,7 @@ function what(txt){ return '<div class="note what"><b>Что здесь прои
 function hands(txt){ return '<div class="note hands"><b>Что делать руками.</b> '+txt+'</div>'; }
 
 function stepNav(){
+  if (state.view === 'lenta') return '';   // в ленте разделы идут подряд, «Дальше» не нужно
   var back = state.step > 1, next = state.step < LAST_STEP;
   var block = state.step === STEP.ozm && !formOk();
   return '<div class="stepnav">'+
@@ -1474,7 +1546,8 @@ function renderRail(){
 }
 
 function renderCrumbs(){
-  var showBlock = multiBlock() && state.mode === 'object' && state.step >= STEP.price && state.step <= STEP.budget;
+  var showBlock = multiBlock() && state.mode === 'object' &&
+    (state.view === 'lenta' || (state.step >= STEP.price && state.step <= STEP.budget));
   document.getElementById('blockSep').hidden = !showBlock;
   var el = document.getElementById('blockPick');
   el.hidden = !showBlock;
@@ -3798,10 +3871,163 @@ views[STEP.extras] = function(){ return views_6(); };
 views[STEP.budget] = function(){ return views_7(); };
 views[STEP.fin]    = function(){ return views_8(); };
 
+/* ==================================================================
+   Лента, С3. Все восемь разделов подряд в одном скролле, трекер и итог
+   справа. Экраны шагов переиспользуются без правок: тот же views[n]().
+   ================================================================== */
+function secAttn(s){ return !!(s.st && s.st !== 'done' && s.note); }
+
+function secGate(n){
+  if (n <= STEP.ozm || formOk()) return '';
+  return '<div class="lsec-gate"><span>Заполните обязательные поля объекта в разделе '+STEP.ozm+'</span>'+
+    '<button class="btn btn-sm" data-go="'+STEP.ozm+'">К разделу '+STEP.ozm+'</button></div>';
+}
+function secHead(n, s){
+  var attn = secAttn(s), folded = !!state.fold[n];
+  return '<span class="tdot lsec-dot"'+(s.st?' data-st="'+s.st+'"':'')+'>'+(s.st==='done'?'✓':n)+'</span>'+
+    '<span class="lsec-name">'+n+'. '+s.name+'</span>'+
+    '<span class="lsec-val'+(attn?' attn':'')+'">'+(attn ? s.note : (s.val||''))+'</span>'+
+    '<button class="btn btn-sm" data-fold="'+n+'" aria-expanded="'+(!folded)+'">'+
+      (folded ? 'Развернуть' : 'Свернуть')+'</button>';
+}
+function lentaSection(n, s){
+  return '<section class="lsec" data-sec="'+n+'"'+(s.st?' data-st="'+s.st+'"':'')+
+    (state.fold[n]?' data-fold="1"':'')+'>'+
+    '<div class="lsec-head">'+secHead(n, s)+'</div>'+
+    '<div class="lsec-body">'+secGate(n)+views[n]()+'</div></section>';
+}
+function renderLenta(){
+  var ST = steps(), out = '', n;
+  out += '<div class="lenta-bar">'+
+    '<button class="btn btn-sm" data-fold-all>Свернуть все</button>'+
+    '<button class="btn btn-sm" data-fold-attn>Развернуть требующие внимания</button>'+
+    '<span class="hint">Все восемь разделов подряд. Трекер и итог справа не двигаются.</span></div>';
+  for (n = 1; n <= LAST_STEP; n++) out += lentaSection(n, ST[n-1]);
+  document.getElementById('stage').innerHTML = out;
+  observeSections();
+}
+/* перерисовка одного раздела: правка наценки не должна трогать восемь экранов */
+function renderSection(n){
+  var sec = document.querySelector('.lsec[data-sec="'+n+'"]');
+  if (!sec) return;
+  var s = steps()[n-1];
+  sec.querySelector('.lsec-head').innerHTML = secHead(n, s);
+  sec.querySelector('.lsec-body').innerHTML = secGate(n) + views[n]();
+  if (s.st) sec.setAttribute('data-st', s.st); else sec.removeAttribute('data-st');
+}
+
+/* прокрутка и фокус переживают перерисовку ленты: правка поля в разделе 5
+   не должна уводить экран и сбрасывать курсор */
+function inputKey(el){
+  var d = el.dataset || {}, ks = [], k;
+  for (k in d) if (Object.prototype.hasOwnProperty.call(d, k)) ks.push(k + '=' + d[k]);
+  return el.tagName + '|' + (el.id || '') + '|' + ks.sort().join('&');
+}
+function stageSnapshot(){
+  var a = document.activeElement, st = document.getElementById('stage');
+  var sn = {y: window.pageYOffset || 0, key:null, sel:null};
+  if (a && st.contains(a) && (a.tagName === 'INPUT' || a.tagName === 'SELECT')){
+    sn.key = inputKey(a);
+    try { sn.sel = [a.selectionStart, a.selectionEnd]; } catch(e){}
+  }
+  return sn;
+}
+function stageRestore(sn){
+  if (!sn) return;
+  if (sn.key){
+    var els = document.querySelectorAll('#stage input, #stage select'), i;
+    for (i = 0; i < els.length; i++){
+      if (inputKey(els[i]) !== sn.key) continue;
+      els[i].focus();
+      try { if (sn.sel && sn.sel[0] != null) els[i].setSelectionRange(sn.sel[0], sn.sel[1]); } catch(e){}
+      break;
+    }
+  }
+  if (sn.y) window.scrollTo(0, sn.y);
+}
+
+/* активная строка трекера следует за прокруткой; в jsdom IntersectionObserver
+   нет, тогда лента работает просто без подсветки */
+var railObs = null;
+function markRail(n){
+  var lis = document.querySelectorAll('#railv li'), i;
+  for (i = 0; i < lis.length; i++) lis[i].className = (+lis[i].dataset.rail === n ? 'here' : '');
+  state.step = n;
+}
+function observeSections(){
+  if (railObs){ railObs.disconnect(); railObs = null; }
+  if (typeof IntersectionObserver === 'undefined') return;
+  railObs = new IntersectionObserver(function(ents){
+    var best = null, i;
+    for (i = 0; i < ents.length; i++){
+      if (!ents[i].isIntersecting) continue;
+      if (!best || ents[i].boundingClientRect.top < best.boundingClientRect.top) best = ents[i];
+    }
+    if (best) markRail(+best.target.dataset.sec);
+  }, {rootMargin:'-8% 0px -70% 0px'});
+  var secs = document.querySelectorAll('.lsec[data-sec]'), j;
+  for (j = 0; j < secs.length; j++) railObs.observe(secs[j]);
+}
+function scrollToSection(n){
+  if (n < 1 || n > LAST_STEP) return;
+  if (state.fold[n]){ state.fold[n] = false; renderSection(n); }
+  var el = document.querySelector('.lsec[data-sec="'+n+'"]');
+  if (!el) return;
+  el.removeAttribute('data-fold');
+  markRail(n);
+  if (el.scrollIntoView) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function renderRailV(){
+  var wrap = document.getElementById('railWrap');
+  var on = state.view === 'lenta' && state.mode === 'object';
+  wrap.hidden = !on;
+  if (!on){ wrap.innerHTML = ''; return; }
+  wrap.innerHTML = '<ol class="railv" id="railv">'+steps().map(function(s){
+    var attn = secAttn(s);
+    return '<li'+(s.st?' data-st="'+s.st+'"':'')+(s.n===state.step?' class="here"':'')+
+      ' data-rail="'+s.n+'"><button data-step="'+s.n+'" title="'+s.name+'">'+
+      '<span class="rdot">'+(s.st==='done'?'✓':s.n)+'</span>'+
+      '<span class="rname">'+s.name+'</span>'+
+      '<span class="rval'+(attn?' attn':'')+'">'+(attn ? s.note : (s.val||''))+'</span>'+
+      '</button></li>';
+  }).join('')+'</ol>'+
+  '<div class="legend legend-v">'+
+    '<span><i class="swatch" style="background:var(--p-auto)"></i>посчитано по справочнику</span>'+
+    '<span><i class="swatch" style="background:var(--p-manual)"></i>введено руками</span>'+
+    '<span><i class="swatch" style="background:var(--p-tender)"></i>ушло в тендер</span>'+
+    '<span><i class="swatch" style="background:var(--p-missing)"></i>данных нет</span>'+
+  '</div>';
+}
+
+function applyView(){
+  var list = state.mode !== 'object', lenta = state.view === 'lenta';
+  document.getElementById('tracker').hidden = list || lenta;
+  document.getElementById('summary').classList.toggle('lenta', lenta && !list);
+  var vp = document.getElementById('viewPick').querySelectorAll('[data-view]'), i;
+  for (i = 0; i < vp.length; i++)
+    vp[i].setAttribute('aria-pressed', vp[i].dataset.view === state.view ? 'true' : 'false');
+}
+function setView(v){
+  if (state.view === v) return;
+  state.view = v;
+  applyView();
+  renderAll();
+  if (v === 'lenta' && state.mode === 'object') scrollToSection(state.step);
+  else if (window.pageYOffset) window.scrollTo(0, 0);
+}
+
 function renderStage(){
-  document.getElementById('stage').innerHTML =
-    state.mode === 'list' ? objectsView() :
-    state.mode === 'sup'  ? suppliersView() : views[state.step]();
+  var el = document.getElementById('stage');
+  if (state.mode === 'list'){ el.innerHTML = objectsView(); return; }
+  if (state.mode === 'sup'){ el.innerHTML = suppliersView(); return; }
+  if (state.view === 'lenta'){
+    var sn = stageSnapshot();
+    renderLenta();
+    stageRestore(sn);
+    return;
+  }
+  el.innerHTML = views[state.step]();
 }
 
 function row(k, v, cls){
@@ -3818,13 +4044,17 @@ function renderSummary(){
   document.getElementById('priceM2').textContent = f2(r.K/M.S) + ' ₽/м²';
   if (document.activeElement !== document.getElementById('contract'))
     document.getElementById('contract').value = f(r.K);
-  document.getElementById('res').innerHTML =
-    row('Накладные 10 %', -r.ovh) + row('НДС к уплате', -r.vatOut) +
+  var detail = row('Накладные 10 %', -r.ovh) + row('НДС к уплате', -r.vatOut) +
     row('Удержание '+pcs(HOLD*100), -r.hold) +
     '<div><span class="k">Удержание возвратное, шаг '+STEP.fin+'</span>'+
       '<span class="v" style="color:var(--muted)">'+f(-holdFlow().backSum)+' ₽</span></div>' +
-    row('Чистая прибыль', r.profit, r.profit>=0?'pos':'neg') +
-    row('Живые деньги', r.cf, r.cf>=0?'pos':'neg');
+    row('Чистая прибыль', r.profit, r.profit>=0?'pos':'neg');
+  var live = row('Живые деньги', r.cf, r.cf>=0?'pos':'neg');
+  document.getElementById('res').innerHTML =
+    (state.view === 'lenta' && state.mode === 'object')
+      ? live + '<details class="sum-more"'+(state.sumMore?' open':'')+'><summary>подробно</summary>'+
+        detail + '<div class="sum-note">эти строки целиком показаны в разделе '+STEP.budget+'</div></details>'
+      : detail + live;
   document.getElementById('verdict').innerHTML = r.cf >= 0
     ? '<div class="ok-line">Запас до дна '+pc(state.m-fm)+' наценки, можно падать до '+f(calc(fm).K)+' ₽</div>'
     : '<div class="warn"><b>Зачем нам завтрашний день?</b> Ниже дна: своих денег в объект '+
@@ -3834,15 +4064,15 @@ function renderSummary(){
   ft.textContent = 'дно ' + pc(fm);
 }
 
-function renderAll(){ renderRail(); renderCrumbs(); renderStage(); renderSummary(); }
+function renderAll(){ renderRail(); renderRailV(); renderCrumbs(); renderStage(); renderSummary(); }
 
 function setMode(mode){
   state.mode = mode;
   var list = mode !== 'object';
-  document.getElementById('tracker').hidden = list;
   document.getElementById('objbar').hidden = list;
   document.getElementById('summary').hidden = list;
   document.getElementById('shell').classList.toggle('wide', list);
+  applyView();
   renderAll();
   if (list){ document.getElementById('objbar').hidden = true; }
   if (window.pageYOffset) window.scrollTo(0, 0);
@@ -3852,12 +4082,13 @@ function goStep(n){
   if (n < 1 || n > LAST_STEP) return;
   if (n > STEP.ozm && !formOk()) n = STEP.ozm;
   state.mode = 'object';
-  document.getElementById('tracker').hidden = false;
   document.getElementById('objbar').hidden = false;
   document.getElementById('summary').hidden = false;
   document.getElementById('shell').classList.remove('wide');
   state.step = n;
+  applyView();
   renderAll();
+  if (state.view === 'lenta') scrollToSection(n);
 }
 
 /* ---- разбор чисел ------------------------------------------------- */
@@ -3867,9 +4098,17 @@ function num(v){
 }
 
 /* ---- события ------------------------------------------------------ */
-document.getElementById('steps').addEventListener('click', function(e){
+function railClick(e){
   var b = e.target.closest('[data-step]'); if(!b) return;
+  if (state.view === 'lenta' && state.mode === 'object'){ scrollToSection(+b.dataset.step); return; }
   goStep(+b.dataset.step);
+}
+document.getElementById('steps').addEventListener('click', railClick);
+document.getElementById('railWrap').addEventListener('click', railClick);
+
+document.getElementById('viewPick').addEventListener('click', function(e){
+  var b = e.target.closest('[data-view]'); if(!b) return;
+  setView(b.dataset.view);
 });
 
 document.getElementById('blockPick').addEventListener('click', function(e){
@@ -3887,7 +4126,26 @@ document.getElementById('stage').addEventListener('click', function(e){
   var t;
   if ((t = e.target.closest('[data-go]'))){
     if (t.disabled) return;
+    if (state.view === 'lenta' && state.mode === 'object'){ scrollToSection(+t.dataset.go); return; }
     goStep(+t.dataset.go); return;
+  }
+  if (e.target.closest('[data-fold-all]')){
+    var fa; for (fa = 1; fa <= LAST_STEP; fa++) state.fold[fa] = true;
+    renderStage(); return;
+  }
+  if (e.target.closest('[data-fold-attn]')){
+    steps().forEach(function(x){ if (x.st !== 'done') state.fold[x.n] = false; });
+    renderStage(); return;
+  }
+  if ((t = e.target.closest('[data-fold]'))){
+    var fn = +t.dataset.fold, sc = document.querySelector('.lsec[data-sec="'+fn+'"]');
+    state.fold[fn] = !state.fold[fn];
+    if (sc){
+      if (state.fold[fn]) sc.setAttribute('data-fold', '1'); else sc.removeAttribute('data-fold');
+    }
+    t.textContent = state.fold[fn] ? 'Развернуть' : 'Свернуть';
+    t.setAttribute('aria-expanded', state.fold[fn] ? 'false' : 'true');
+    return;
   }
   if (e.target.closest('[data-passport]')){ passportModal(); return; }
   if (e.target.closest('[data-supply]')){ supplyModal(); return; }
@@ -4104,6 +4362,13 @@ document.getElementById('stage').addEventListener('change', function(e){
   }
 });
 
+/* от цены зависят только тендерный бюджет и финплан: в ленте перерисовываем
+   эти два раздела, а не все восемь */
+function renderPriceDeps(){
+  if (state.mode !== 'object') return;
+  if (state.view === 'lenta'){ renderSection(STEP.budget); renderSection(STEP.fin); return; }
+  if (state.step === STEP.budget || state.step === STEP.fin) renderStage();
+}
 function scaleOffer(){
   if (!O.offer) return;
   var K = calc(state.m).K, tot = offerTotal();
@@ -4115,7 +4380,7 @@ document.getElementById('markup').addEventListener('input', function(e){
   state.m = +e.target.value / 100;
   scaleOffer();
   renderSummary();
-  if (state.step === STEP.budget || state.step === STEP.fin) renderStage();
+  renderPriceDeps();
 });
 document.getElementById('contract').addEventListener('input', function(e){
   var v = parseFloat(e.target.value.replace(/[^\d]/g,''));
@@ -4126,9 +4391,14 @@ document.getElementById('contract').addEventListener('input', function(e){
   scaleOffer();
   document.getElementById('markup').value = (state.m*100).toFixed(1);
   renderSummary();
-  if (state.step === STEP.budget || state.step === STEP.fin) renderStage();
+  renderPriceDeps();
 });
 document.getElementById('contract').addEventListener('blur', renderSummary);
+
+/* «подробно» в итоге ленты переживает перерисовку */
+document.getElementById('res').addEventListener('toggle', function(e){
+  if (e.target && e.target.classList.contains('sum-more')) state.sumMore = e.target.open;
+}, true);
 
 document.getElementById('overlay').addEventListener('click', function(e){
   if (e.target.id === 'overlay'){ closeModal(); return; }
@@ -4171,7 +4441,12 @@ document.addEventListener('keydown', function(e){
 });
 
 /* ---- старт --------------------------------------------------------- */
+/* ссылка с #lenta открывает прототип сразу лентой: Павлу уходит один адрес,
+   браузерное хранилище по-прежнему не используем */
+if (String(window.location.hash || '').replace('#', '') === 'lenta') state.view = 'lenta';
 loadObject('dogma');
+applyView();
 renderAll();
+if (state.view === 'lenta') scrollToSection(state.step);
 })();
 </script>
