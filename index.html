@@ -58,7 +58,7 @@ details.fold>summary>.eyebrow:first-child{font-size:12.5px;letter-spacing:.07em;
 .brand{font-size:15px;font-weight:600;color:var(--ink);letter-spacing:-.01em;
   padding-right:16px;border-right:1px solid var(--line)}
 .brand span{color:var(--faint);font-weight:400}
-.proto{margin-left:auto;display:flex;gap:10px;align-items:center}
+.proto{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
   padding:3px 7px;background:var(--sunken);color:var(--muted);border-radius:3px}
 .verline{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;
@@ -355,6 +355,13 @@ input[type=range]{width:100%;margin:8px 0 0;accent-color:var(--ink);background:t
 /* ---------- «Что мешает» ---------- */
 details.fold.blk{border:1px solid var(--line-strong)}
 tr.blk-row{cursor:pointer}
+tr.blk-more{cursor:pointer}
+tr.blk-more td{color:var(--muted);font-size:11.5px}
+tr.blk-more:hover td{color:var(--ink)}
+.blk-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);
+  border:1px solid var(--line-strong);border-radius:8px;padding:11px 14px;margin-bottom:14px}
+.blk-bar .eyebrow{margin-right:auto}
+.late-grey{color:var(--faint)}
 tr.blk-row:hover{background:var(--sunken)}
 tr.blk-row[data-over="1"] td:first-child{box-shadow:inset 2px 0 0 var(--p-missing)}
 .draft-norm{color:var(--p-manual)}
@@ -371,6 +378,10 @@ tr.blk-row[data-over="1"] td:first-child{box-shadow:inset 2px 0 0 var(--p-missin
   border-bottom:1px solid var(--line-strong);margin-bottom:16px}
 .lsec-dot{width:26px;height:26px;box-shadow:none;font-size:11.5px}
 .lsec-name{font-size:15px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+/* шапка секции уже назвала шаг, второй заголовок под ней лишний */
+.lsec .stage-title{display:none}
+.lsec .stage-head{padding-bottom:10px;margin-bottom:16px}
+.lsec .stage-sub{margin-top:0}
 .lsec-val{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-left:auto;text-align:right}
 .lsec-val.attn{color:var(--p-manual)}
 .lsec-dot[data-st]{color:var(--surface)}
@@ -413,6 +424,13 @@ tr.blk-row[data-over="1"] td:first-child{box-shadow:inset 2px 0 0 var(--p-missin
 .sum-more>summary::after{content:" ▸"}
 .sum-more[open]>summary::after{content:" ▾"}
 .sum-note{font-size:10.5px;color:var(--faint);padding:4px 0}
+
+@media (max-width:560px){
+  .topbar{gap:10px;padding:10px 14px}
+  .proto{margin-left:0;width:100%}
+  .tag{display:none}
+  .verline{padding:0 14px 9px}
+}
 
 @media (max-width:1080px){
   .summary.lenta{max-height:none;overflow:visible}
@@ -853,6 +871,7 @@ var state = {
   fold: {},         // свёрнутые разделы ленты
   sumMore: false,   // «подробно» в итоге ленты
   blkOpen: null,    // «Что мешает»: null — по умолчанию, дальше выбор пользователя
+  blkAll: false,    // «Что мешает»: показывать все шаги, а не только текущий
   m: 0.3966571,
   mode: 'object',
   block: 'all',
@@ -1404,7 +1423,8 @@ function saveObjectState(){
   Object.keys(PARAMS).forEach(function(k){ pv[k] = PARAMS[k].value; });
   O.saved = {step:state.step, m:state.m, block:state.block, target:state.target, metiz:state.metiz,
              dirForm:state.dirForm, marketing:state.marketing, funds:state.funds, open:state.open,
-             fold:state.fold, tree:state.tree, cmp:state.cmp, ks:state.ks, params:pv, paramEdited:paramEdited};
+             fold:state.fold, blkAll:state.blkAll, tree:state.tree, cmp:state.cmp, ks:state.ks,
+             params:pv, paramEdited:paramEdited};
 }
 function loadObject(id){
   if (O && O.id === id) return;
@@ -1433,6 +1453,7 @@ function loadObject(id){
   state.funds = sv ? sv.funds : 0;
   state.open = sv ? sv.open : {};
   state.fold = sv && sv.fold ? sv.fold : {};
+  state.blkAll = sv ? !!sv.blkAll : false;
   state.tree = sv ? sv.tree : {};
   state.ks = sv ? sv.ks : null;
   state.cmp  = sv ? sv.cmp  : {};
@@ -2548,7 +2569,7 @@ var NORMS = {
   calc:   {n:'расчёт объекта',                 h:5,  src:'Павел 07.09'},
   supply: {n:'подтверждение цен поставщиков',  h:24, src:'Павел 07.09'},
   dict:   {n:'ответ на вопрос по справочнику', h:48, src:'черновик, норматив ждём от Павла, В3', draft:true},
-  rp:     {n:'ответ РП',                       h:48, src:'черновик, норматив ждём от Павла, В3', draft:true}
+  rp:     {n:'ответ на открытый вопрос',       h:48, src:'черновик, норматив ждём от Павла, В3', draft:true}
 };
 
 /* Открытые вопросы, от которых зависят цифры объекта. Формулировки взяты из
@@ -2595,6 +2616,11 @@ function plDay(n){
 function plRow(n){
   var t = n % 10, h = n % 100;
   return n + (t === 1 && h !== 11 ? ' строка' : (t >= 2 && t <= 4 && (h < 10 || h >= 20) ? ' строки' : ' строк'));
+}
+/* «288 ч» читается плохо: больше двух суток показываем и в днях */
+function passedLabel(h){
+  if (h === null) return null;
+  return h <= 48 ? h + ' ч' : h + ' ч · ' + plDay(Math.round(h / 24));
 }
 function plReq(n){
   var t = n % 10, h = n % 100;
@@ -2688,24 +2714,50 @@ function blockers(){
   return out;
 }
 
+/* В ленте блок полный. По шагам он не должен закрывать собой экран шага:
+   показываем просроченное по всем шагам и строки текущего шага, остальное
+   прячем за одну строку «показать все». Выбор живёт в состоянии объекта. */
+function blockersShown(B){
+  if (state.view === 'lenta' || state.blkAll) return B;
+  return B.filter(function(x){ return x.over || x.step === state.step; });
+}
+function blockersShown0(B){
+  return B.filter(function(x){ return x.over || x.step === state.step; });
+}
+function blkSummaryText(B, over){
+  return 'Что мешает · ' + plRow(B.length) + ' · ' + (over ? over + ' просрочено' : 'просрочек нет');
+}
 function blockersPanel(){
   var B = blockers();
   if (!B.length) return '';
   var over = B.filter(function(x){ return x.over; }).length;
   var ST = steps();
-  var rows = B.map(function(x){
+  var shown = blockersShown(B), hidden = B.length - shown.length;
+
+  /* показывать нечего: одна строка-сводка со ссылкой на полный список */
+  if (!shown.length)
+    return '<div class="blk-bar" id="blk"><span class="eyebrow">' + blkSummaryText(B, over) + '</span>' +
+      '<button class="btn btn-sm" data-blk-all="1">показать все</button></div>';
+
+  var rows = shown.map(function(x){
     var st = ST[x.step - 1];
-    return '<tr class="blk-row" data-go="' + x.step + '">' +
+    return '<tr class="blk-row" data-go="' + x.step + '"' + (x.over ? ' data-over="1"' : '') + '>' +
       '<td>' + x.what + '</td>' +
       '<td style="white-space:nowrap">Шаг ' + x.step + ' · ' + (st ? st.name : '') + '</td>' +
       '<td>' + (x.who || '—') + '</td>' +
       '<td class="r' + (x.draft ? ' draft-norm' : '') + '" title="' + x.normName + ': ' + x.normSrc + '">' +
         x.normH + ' ч' + (x.draft ? ' *' : '') + '</td>' +
-      '<td class="r num">' + (x.h === null ? '<span style="color:var(--faint)">дата не записана</span>' : x.h + ' ч') + '</td>' +
+      '<td class="r num">' + (x.h === null ? '<span style="color:var(--faint)">дата не записана</span>' : passedLabel(x.h)) + '</td>' +
       '<td>' + (x.h === null ? '<span class="pill p-manual">срок не идёт</span>'
               : (x.over ? '<span class="pill p-missing">просрочено</span>'
                         : '<span class="pill p-auto">в срок</span>')) + '</td></tr>';
   }).join('');
+  if (hidden)
+    rows += '<tr class="blk-more" data-blk-all="1"><td colspan="6">ещё ' + hidden +
+      ' по другим шагам, показать все</td></tr>';
+  else if (state.blkAll && state.view !== 'lenta' && blockersShown0(B).length < B.length)
+    rows += '<tr class="blk-more" data-blk-all="0"><td colspan="6">свернуть до просроченных и текущего шага</td></tr>';
+
   var open = state.blkOpen === null ? over > 0 : state.blkOpen;
   return '<details class="fold blk" id="blk"' + (open ? ' open' : '') + '>' +
     '<summary><span class="eyebrow">Что мешает · ' + plRow(B.length) + '</span>' +
@@ -4027,15 +4079,13 @@ var OBJECTS = [
    ex:1, started:'01.09.2026', exStep:3, exStepName:'Закупка и тендер', exWho:'Снабжение', exLate:2},
   {name:'Level Причальный', variant:'Фасад, ленточное остекление', cust:'Level Group', st:'Выигран',
    s:7480.00, cost:82150000, price:118400000, profit:0.104, who:'Кирилл С.', date:'14.07.2026',
-   ex:1, started:'01.07.2026', fixed:'14.07.2026', exStep:8, exStepName:'Финансовый план',
-   exWho:'Кирилл С.', exLate:0},
+   ex:1, started:'01.07.2026', fixed:'14.07.2026'},
   {name:'Ташкент Сити, блок 4', variant:'ENSAVE AV-65, Узбекистан', cust:'UzDevelopment', st:'Тендер',
    s:4260.00, cost:41300000, price:57000000, profit:0.071, who:'Кирилл С.', date:'20.08.2026',
    ex:1, started:'20.08.2026', exStep:6, exStepName:'Статьи затрат', exWho:'Андрей', exLate:1},
   {name:'Символ, корпус 4', variant:'Aurora A77, окна и двери', cust:'Донстрой', st:'Проигран',
    s:2940.00, cost:33900000, price:46100000, profit:0.062, who:'Груздев И.', date:'03.06.2026',
-   ex:1, started:'20.05.2026', fixed:'03.06.2026', exStep:7, exStepName:'Тендерный бюджет',
-   exWho:'Груздев И.', exLate:0}
+   ex:1, started:'20.05.2026', fixed:'03.06.2026'}
 ];
 var IN_WORK = {'Тендер':1, 'Расчёт':1};
 var listOpen = {};      // раскрытые строки блоков в реестре
@@ -4051,28 +4101,43 @@ function withObject(id, fn){
   loadObject(back);
   return r;
 }
+/* Объект стоит на первом шаге со статусом «данных нет» или «в тендере».
+   Статус «руками» (правленые ставки, кассовый разрыв) это не остановка. */
+function STOP_ST(st){ return st === 'missing' || st === 'tender'; }
+
+/* Выигранные и проигранные никого не держат: расчёт закрыт, вопросы внутри
+   объекта остаются, но в реестре они не красятся и не идут в сводку. */
 function objInfo(o){
+  var closed = !IN_WORK[o.st];
+  var days = daysBetween(o.started, o.fixed || TODAY);
   if (!o.obj){
-    var d = daysBetween(o.started, o.fixed || TODAY);
-    return {step:o.exStep, stepName:o.exStepName, days:d, who:o.exWho, over:o.exLate || 0, ex:true};
+    return {step:closed ? null : o.exStep, stepName:closed ? '' : o.exStepName, days:days,
+            who:closed ? '' : o.exWho, over:closed ? 0 : (o.exLate || 0), ex:true, closed:closed};
   }
   return withObject(o.obj, function(){
     var ST = steps(), i, st = null;
-    for (i = 0; i < ST.length; i++) if (ST[i].st !== 'done'){ st = ST[i]; break; }
-    if (!st) st = ST[ST.length - 1];
+    for (i = 0; i < ST.length; i++) if (STOP_ST(ST[i].st)){ st = ST[i]; break; }
     var B = blockers(), late = B.filter(function(x){ return x.over; });
-    return {step:st.n, stepName:st.name, days:daysBetween(o.started, o.fixed || TODAY),
-            who:late.length ? late[0].who : o.who, over:late.length, ex:false};
+    return {step:closed ? null : (st ? st.n : null), stepName:closed || !st ? '' : st.name, days:days,
+            who:closed ? '' : (late.length ? late[0].who : o.who),
+            over:late.length, ex:false, closed:closed};
   });
+}
+/* закрытый объект в сортировке и в сводке считается без просрочек */
+function lateOf(n){ return n.closed ? 0 : n.over; }
+function whereText(o, n){
+  if (n.closed) return o.st + ', бюджет зафиксирован ' + (o.fixed || o.date);
+  if (!n.step) return 'расчёт собран, остановок нет';
+  return 'Шаг ' + n.step + ' · ' + n.stepName;
 }
 
 function objectsView(){
   var info = OBJECTS.map(objInfo);
   /* сортировка: сначала с просрочкой, потом по дням в расчёте */
   var order = OBJECTS.map(function(o, i){ return i; }).sort(function(a, b){
-    var ia = info[a], ib = info[b];
-    if ((ia.over > 0) !== (ib.over > 0)) return ia.over > 0 ? -1 : 1;
-    if (ib.over !== ia.over) return ib.over - ia.over;
+    var ia = info[a], ib = info[b], la = lateOf(ia), lb = lateOf(ib);
+    if ((la > 0) !== (lb > 0)) return la > 0 ? -1 : 1;
+    if (lb !== la) return lb - la;
     return (ib.days == null ? -1 : ib.days) - (ia.days == null ? -1 : ia.days);
   });
 
@@ -4089,7 +4154,7 @@ function objectsView(){
       '<span class="obj-name">' + o.name + '</span><div class="obj-sub">' + o.variant + '</div></td>' +
       '<td>' + o.cust + '</td>' +
       '<td><span class="stage-pill' + (cur ? ' now' : '') + '">' + (cur ? 'открыт' : o.st) + '</span></td>' +
-      '<td>' + (n.step ? 'Шаг ' + n.step + ' · ' + n.stepName : '—') +
+      '<td>' + whereText(o, n) +
         (n.ex ? ' <span class="cond-mark" title="условно: строка примерная">пример</span>' : '') + '</td>' +
       '<td class="r num">' + f2(o.s) + '</td>' +
       '<td class="r num">' + mln(o.cost) + '</td>' +
@@ -4097,7 +4162,7 @@ function objectsView(){
       '<td class="r num">' + (o.profit ? f2(o.profit * 100) + ' %' : '—') + '</td>' +
       '<td class="r num">' + (n.days == null ? '—' : n.days) + '</td>' +
       '<td>' + (n.who || '—') + '</td>' +
-      '<td class="r num' + (n.over ? ' late-n' : '') + '">' + n.over + '</td>' +
+      '<td class="r num' + (n.closed ? ' late-grey' : (n.over ? ' late-n' : '')) + '">' + n.over + '</td>' +
       '<td class="mono" style="font-size:11px;color:var(--faint)">' + o.date + '</td></tr>';
     if (!o.sub || !open) return head;
     return head + o.sub.map(function(b, j){
@@ -4121,7 +4186,7 @@ function objectsView(){
     if (!IN_WORK[o.st]) return;
     var n = info[i];
     work.push(o);
-    if (n.over) late++;
+    if (lateOf(n)) late++;
     if (n.days != null){ days += n.days; dn++; }
     if (n.step){
       byStep[n.step] = (byStep[n.step] || 0) + 1;
@@ -4137,8 +4202,10 @@ function objectsView(){
     'кто держит и сколько строк «Что мешает» вышло за норматив. Открытый объект отмечен слева.</p></div>' +
     '<div class="stage-actions"><button class="btn btn-primary">Новый расчёт</button></div></div>' +
   cells([['Объектов в работе', String(work.length), 'всего в реестре ' + OBJECTS.length],
-         ['Из них с просрочкой', String(late), late ? 'строки «Что мешает» сверх норматива' : 'все в срок'],
-         ['Средний срок расчёта', dn ? f2(avg) + ' дн' : '—', 'по объектам в работе, от даты начала до ' + TODAY],
+         ['Из них с просрочкой', String(late),
+          late ? 'объектов, где есть строка сверх норматива' : 'все в срок'],
+         ['Средний срок расчёта', dn ? plDay(Math.round(avg)) : '—',
+          'по объектам в работе, от даты начала до ' + TODAY],
          ['Больше всего объектов стоит', top ? 'на шаге ' + top : '—', topName || '']]) +
   panel('Расчёты', 'показано ' + OBJECTS.length + ' из ' + OBJECTS.length,
     '<div class="tw"><table><thead><tr><th>Объект</th><th>Заказчик</th><th>Стадия</th><th>Где стоит</th>' +
@@ -4195,7 +4262,7 @@ function secGate(n){
 function secHead(n, s){
   var attn = secAttn(s), folded = !!state.fold[n];
   return '<span class="tdot lsec-dot"'+(s.st?' data-st="'+s.st+'"':'')+'>'+(s.st==='done'?'✓':n)+'</span>'+
-    '<span class="lsec-name">'+n+'. '+s.name+'</span>'+
+    '<h2 class="lsec-name">'+n+'. '+s.name+'</h2>'+
     '<span class="lsec-val'+(attn?' attn':'')+'">'+(attn ? s.note : (s.val||''))+'</span>'+
     '<button class="btn btn-sm" data-fold="'+n+'" aria-expanded="'+(!folded)+'">'+
       (folded ? 'Развернуть' : 'Свернуть')+'</button>';
@@ -4234,27 +4301,45 @@ function inputKey(el){
   for (k in d) if (Object.prototype.hasOwnProperty.call(d, k)) ks.push(k + '=' + d[k]);
   return el.tagName + '|' + (el.id || '') + '|' + ks.sort().join('&');
 }
+/* куда уходил фокус: 1 это Tab и Enter, -1 это Shift+Tab, 0 это обычная правка */
+var tabDir = 0;
 function stageSnapshot(){
   var a = document.activeElement, st = document.getElementById('stage');
-  var sn = {y: window.pageYOffset || 0, key:null, sel:null};
+  var sn = {y: window.pageYOffset || 0, key:null, sel:null, tab:0};
   if (a && st.contains(a) && (a.tagName === 'INPUT' || a.tagName === 'SELECT')){
     sn.key = inputKey(a);
+    sn.tab = tabDir;
     try { sn.sel = [a.selectionStart, a.selectionEnd]; } catch(e){}
   }
   return sn;
 }
-function stageRestore(sn){
+/* элементы, на которые уходит табуляция, в порядке документа */
+function stageFocusables(){
+  return Array.prototype.slice.call(document.querySelectorAll(
+    '#stage a[href], #stage button:not([disabled]), #stage input:not([disabled]), ' +
+    '#stage select:not([disabled]), #stage textarea:not([disabled])'));
+}
+/* Правка поля вызывает перерисовку раньше, чем браузер успевает перевести
+   фокус по Tab, и фокус улетает на BODY. Направление запоминаем на keydown
+   и после перерисовки ставим фокус сами. */
+function stageRestore(sn, keepScroll){
   if (!sn) return;
+  var el = null, i;
   if (sn.key){
-    var els = document.querySelectorAll('#stage input, #stage select'), i;
-    for (i = 0; i < els.length; i++){
-      if (inputKey(els[i]) !== sn.key) continue;
-      els[i].focus();
-      try { if (sn.sel && sn.sel[0] != null) els[i].setSelectionRange(sn.sel[0], sn.sel[1]); } catch(e){}
-      break;
-    }
+    var els = document.querySelectorAll('#stage input, #stage select');
+    for (i = 0; i < els.length; i++) if (inputKey(els[i]) === sn.key){ el = els[i]; break; }
   }
-  if (sn.y) window.scrollTo(0, sn.y);
+  if (el && sn.tab){
+    var list = stageFocusables(), at = list.indexOf(el), to = at + sn.tab;
+    el = (at >= 0 && to >= 0 && to < list.length) ? list[to] : el;
+  }
+  if (el){
+    /* без Tab поле и так на экране: возвращаем фокус, не дёргая прокрутку */
+    try { el.focus(sn.tab ? undefined : {preventScroll:true}); } catch(e){ el.focus(); }
+    if (sn.tab){ try { el.select(); } catch(e){} }
+    else { try { if (sn.sel && sn.sel[0] != null) el.setSelectionRange(sn.sel[0], sn.sel[1]); } catch(e){} }
+  }
+  if (keepScroll && sn.y) window.scrollTo(0, sn.y);
 }
 
 /* активная строка трекера следует за прокруткой; в jsdom IntersectionObserver
@@ -4329,16 +4414,20 @@ function setView(v){
 }
 
 function renderStage(){
-  var el = document.getElementById('stage');
-  if (state.mode === 'list'){ el.innerHTML = objectsView(); return; }
-  if (state.mode === 'sup'){ el.innerHTML = suppliersView(); return; }
+  var el = document.getElementById('stage'), sn;
+  if (state.mode === 'list'){ el.innerHTML = objectsView(); tabDir = 0; return; }
+  if (state.mode === 'sup'){ el.innerHTML = suppliersView(); tabDir = 0; return; }
   if (state.view === 'lenta'){
-    var sn = stageSnapshot();
+    sn = stageSnapshot();
     renderLenta();
-    stageRestore(sn);
+    stageRestore(sn, true);
+    tabDir = 0;
     return;
   }
+  sn = stageSnapshot();
   el.innerHTML = blockersPanel() + views[state.step]();
+  stageRestore(sn, false);
+  tabDir = 0;
 }
 
 function row(k, v, cls){
@@ -4392,6 +4481,7 @@ function setMode(mode){
 function goStep(n){
   if (n < 1 || n > LAST_STEP) return;
   if (n > STEP.ozm && !formOk()) n = STEP.ozm;
+  if (state.mode === 'object' && n !== state.step) state.blkAll = false;
   state.mode = 'object';
   document.getElementById('objbar').hidden = false;
   document.getElementById('summary').hidden = false;
@@ -4439,6 +4529,11 @@ document.getElementById('stage').addEventListener('click', function(e){
     if (t.disabled) return;
     if (state.view === 'lenta' && state.mode === 'object'){ scrollToSection(+t.dataset.go); return; }
     goStep(+t.dataset.go); return;
+  }
+  if ((t = e.target.closest('[data-blk-all]'))){
+    state.blkAll = t.dataset.blkAll === '1';
+    state.blkOpen = true;
+    renderStage(); return;
   }
   if (e.target.closest('[data-fold-all]')){
     var fa; for (fa = 1; fa <= LAST_STEP; fa++) state.fold[fa] = true;
@@ -4513,11 +4608,20 @@ document.getElementById('stage').addEventListener('click', function(e){
       var sb = (t.dataset.sub != null && o.sub) ? o.sub[+t.dataset.sub] : null;
       if (sb) state.block = sb.block;
       else if (o.sub) state.block = O.block0;
+      /* при входе в тендер из реестра показываем всё, что мешает */
+      state.blkAll = true;
       goStep(state.step);
     } else goStep(state.step);
     return;
   }
 });
+
+document.getElementById('stage').addEventListener('keydown', function(e){
+  if (e.key === 'Tab') tabDir = e.shiftKey ? -1 : 1;
+  else if (e.key === 'Enter') tabDir = 1;
+  else tabDir = 0;
+}, true);
+document.getElementById('stage').addEventListener('mousedown', function(){ tabDir = 0; }, true);
 
 /* правка обязательных полей: кнопку «Дальше» гасим сразу, без перерисовки */
 document.getElementById('stage').addEventListener('input', function(e){
