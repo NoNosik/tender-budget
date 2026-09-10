@@ -2185,19 +2185,64 @@ function offerPanel(r){
     (Math.abs(diff) > 1 ? ', расхождение с ползунком '+f(diff)+' ₽ (округление в файле)' : '')+'. '+
     'Правка цены за единицу двигает ползунок, ползунок пропорционально двигает все цены оферты.</div>', true);
 }
+/* Сравнение версий бюджета деревом (документ 22, вопрос 2).
+   Колонка G листа ДИР — первоначальный бюджет, колонка D — наша версия
+   по рабочему ОЗМ. Обе заполнены на уровне статей ДИР и заголовков
+   блоков; строки товарных групп пусты в обеих, поэтому уровня позиций
+   ОЗМ здесь нет — он появится, когда рабочий ОЗМ будет грузиться в тот
+   же объект. Дельта считается как «первоначальный минус наша версия»,
+   так же как колонка I файла: плюс это в нашу пользу, минус «минусит». */
 function comparePanel(r){
-  if (!O.compare) return '';
-  var rows = O.compare.rows.map(function(c){
-    var d = Math.round(c[2] - c[1]), good = c[3] ? d > 0 : d < 0, bad = c[3] ? d < 0 : d > 0;
-    return '<tr><td>'+c[0]+'</td><td class="r num" style="color:var(--muted)">'+f(c[1])+'</td>'+
-      '<td class="r num">'+f(c[2])+'</td>'+
-      '<td class="r num"'+(good?' style="color:var(--p-auto)"':(bad?' style="color:var(--p-missing)"':''))+'>'+(d>0?'+':'')+f(d)+'</td></tr>';
-  }).join('');
-  return panel(O.compare.title, O.compare.src,
-    '<div class="tw"><table><thead><tr><th>Строка ДИР</th><th class="r">Первоначальный, ₽</th>'+
-    '<th class="r">По рабочему ОЗМ, ₽</th><th class="r">Разница</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
-    '<div class="note">Цена контракта одна и та же, разница в себестоимости: материалы по рабочему ОЗМ вышли на 5 млн дешевле. '+
-    'Колонка «по рабочему ОЗМ» это то, с чего стартует прототип; правки на шагах уходят от неё.</div>', true);
+  if (!O.compareTree) return '';
+  var V = O.versions, T = O.compareTree, tot = O.compareTotal;
+  var openTop = null, openMid = null, rows = '';
+  T.forEach(function(c, idx){
+    var lvl = c[0], name = c[1], ini = c[2], wrk = c[3], addr = c[4];
+    var key = 'c' + idx;
+    if (lvl === 0){ openTop = key; openMid = null; }
+    else if (lvl === 1){
+      if (!state.cmp[openTop]) return;
+      openMid = key;
+    } else {
+      if (!state.cmp[openTop] || !state.cmp[openMid]) return;
+    }
+    var kids = lvl < 2 && T[idx + 1] && T[idx + 1][0] > lvl;
+    var d = ini - wrk;
+    var col = Math.abs(d) < 0.5 ? '' : (d > 0 ? ' style="color:var(--p-auto)"' : ' style="color:var(--p-missing)"');
+    var pct = ini ? d / ini * 100 : 0;
+    return rows += '<tr' + (lvl === 0 ? ' style="border-top:1px solid var(--line-strong)"' : (lvl === 2 ? ' class="sub"' : '')) + '>' +
+      '<td class="nm" style="padding-left:' + (6 + lvl * 20) + 'px">' +
+      (kids ? '<button class="expander" data-cmp="' + key + '" aria-expanded="' + (!!state.cmp[key]) +
+              '" aria-label="Раскрыть">' + (state.cmp[key] ? '▾' : '▸') + '</button>' : '') +
+      (lvl === 0 ? '<b>' + name + '</b>' : name) +
+      '<div class="quar-addr" style="color:var(--faint)">' + addr + '</div></td>' +
+      '<td class="r num" style="color:var(--muted)">' + f(ini) + '</td>' +
+      '<td class="r num">' + f(wrk) + '</td>' +
+      '<td class="r num"' + col + '>' + (d > 0 ? '+' : '') + f(d) + '</td>' +
+      '<td class="r num"' + col + '>' + (ini ? (d > 0 ? '+' : '') + pcs(pct) : '—') + '</td></tr>';
+  });
+  var dt = tot[1] - tot[2];
+  return panel(O.compare ? O.compare.title : 'Первоначальный бюджет против нашей версии',
+    V.initial.src + ' против ' + V.working.src + ' · уровень сравнения: ' + V.initial.level,
+    '<div class="grid3" style="background:none;gap:16px;margin-bottom:12px">' +
+    '<div><div class="eyebrow">Цена контракта</div><div class="sum-big" style="font-size:19px">' + f(r.K) + ' ₽</div>' +
+      '<div class="field-note">одна и та же в обеих версиях</div></div>' +
+    '<div><div class="eyebrow">Себестоимость</div><div class="sum-big" style="font-size:19px">' + f(tot[2]) + ' ₽</div>' +
+      '<div class="field-note">против ' + f(tot[1]) + ' ₽ в первоначальном</div></div>' +
+    '<div><div class="eyebrow">Чистая прибыль</div><div class="sum-big" style="font-size:19px">' + f(r.profit) + ' ₽</div>' +
+      '<div class="field-note">против 482 785 ₽ в первоначальном, ДИР!G177</div></div>' +
+    '</div>' +
+    '<div class="tw"><table><thead><tr><th>Статья ДИР</th><th class="r">Первоначальный, ₽</th>' +
+    '<th class="r">По рабочему ОЗМ, ₽</th><th class="r">Дельта, ₽</th><th class="r">Дельта, %</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody>' +
+    '<tfoot><tr><td>' + tot[0] + '<div class="quar-addr" style="color:var(--faint)">' + tot[3] + '</div></td>' +
+    '<td class="r num">' + f(tot[1]) + '</td><td class="r num">' + f(tot[2]) + '</td>' +
+    '<td class="r num" style="color:var(--p-auto)">+' + f(dt) + '</td>' +
+    '<td class="r num" style="color:var(--p-auto)">+' + pcs(dt / tot[1] * 100) + '</td></tr></tfoot></table></div>' +
+    '<div class="note">Зелёное это в нашу пользу, красное «минусит»: там наша версия дороже первоначальной. ' +
+    'Сумма дельт по разделам сходится с колонкой I файла и с разницей итогов ' + tot[3] + '. ' +
+    'Раскрытие до позиций ОЗМ появится, когда рабочий ОЗМ будет грузиться в тот же объект: в файле обе колонки ' +
+    'заполнены только до статей ДИР.</div>', true);
 }
 
 var payPending = null;
@@ -2820,7 +2865,12 @@ function finTree(){
       x.pct = ts.acc[x.key] ? ts.acc[x.key] : (o.touched ? x.rec : o.pct);
       x.edited = !!ts.acc[x.key];
       x.note = ts.note[x.key] || '';
-      x.arr = x.pct.map(function(v){ return x.sum * v / 100; });
+      /* деньги раздаются по нормированным долям, поэтому сумма строки за все
+         месяцы всегда равна её сумме, как бы ни правили проценты */
+      var tp = x.pct.reduce(function(a, v){ return a + v; }, 0);
+      x.pctSum = tp;
+      x.arr = tp ? x.pct.map(function(v){ return x.sum * v / tp; })
+                 : x.pct.map(function(v, i){ return i ? 0 : x.sum; });
     });
     o.arr = zeros(n);
     o.items.forEach(function(x){ x.arr.forEach(function(v, i){ o.arr[i] += v; }); });
@@ -2986,6 +3036,7 @@ function treePanel(F){
           '" aria-label="' + x.name + ', ' + FIN.months[i] + ', %"></td>';
       }
       rows += '<tr class="sub"><td class="nm" style="padding-left:26px">' + x.name +
+        (Math.abs(x.pctSum - 100) > 0.05 ? ' <span class="bad">' + pcs(x.pctSum) + '</span>' : '') +
         '<div style="font-size:10px;color:var(--faint)">рекомендовано: ' + x.auto + ' · ' + x.src + '</div></td>' +
         itds + '<td class="r num">' + f(x.sum) + '</td>' +
         '<td><input type="text" class="' + (x.note ? '' : 'auto-in') + '" data-inote="' + x.key +
@@ -3411,6 +3462,10 @@ document.getElementById('stage').addEventListener('click', function(e){
   if ((t = e.target.closest('[data-open]'))){
     var key = t.dataset.open;
     state.open[key] = !state.open[key];
+    renderStage(); return;
+  }
+  if ((t = e.target.closest('[data-cmp]'))){
+    state.cmp[t.dataset.cmp] = !state.cmp[t.dataset.cmp];
     renderStage(); return;
   }
   if ((t = e.target.closest('[data-tree]'))){
