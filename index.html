@@ -3332,9 +3332,9 @@ function renderSummary(){
     document.getElementById('contract').value = f(r.K);
   document.getElementById('res').innerHTML =
     row('Накладные 10 %', -r.ovh) + row('НДС к уплате', -r.vatOut) +
-    row('Удержание невозвратное', -r.hold) +
-    '<div><span class="k">Удержание возвратное</span><span class="v" style="color:var(--muted)">'+
-      f(-holdFlow().backSum)+' ₽</span></div>' +
+    row('Удержание '+pcs(HOLD*100), -r.hold) +
+    '<div><span class="k">Удержание возвратное, шаг '+STEP.fin+'</span>'+
+      '<span class="v" style="color:var(--muted)">'+f(-holdFlow().backSum)+' ₽</span></div>' +
     row('Чистая прибыль', r.profit, r.profit>=0?'pos':'neg') +
     row('Живые деньги', r.cf, r.cf>=0?'pos':'neg');
   document.getElementById('verdict').innerHTML = r.cf >= 0
