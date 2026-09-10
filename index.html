@@ -612,24 +612,43 @@ function mountStageWeights(){
    (Павел 02.09, документ 10, раздел 3.6).
    TODO Р1: деление на возвратную и невозвратную часть связано с HOLD
    объекта временно, до ответа на Р1. */
+/* Справочник ключуется заказчиком и типом договора (документ 24, раздел 4,
+   пункт 6): у Сэтла фасадные договоры 9 + 1, витражные 6 + 1. База у всех
+   строк цена контракта по КС-3, а не СМР-часть оферты — так в тексте
+   договора. Витражный договор Сэтла: 93 % в течение 15 рабочих дней после
+   КС-2/КС-3, 6 % сумма резервирования по п. 5.1.2, 1 % гарантийная сумма
+   до конца гарантийного срока. */
 var CUSTOMERS = {
-  'СЭТЛ СТРОЙ':{hold:[
-    {pct:9, base:'smr',   release:'after_handover', inDir:false, src:'условия договора 150626ВХ'},
-    {pct:1, base:'total', release:'after_warranty', inDir:true,
-     src:'ДИР!E172 = 1 %, база — цена контракта: ДИР!D172 = 395 046,23'}
+  'СЭТЛ СТРОЙ|витражи':{hold:[
+    {pct:6, base:'total', release:'reserve', inDir:false,
+     src:'договор 150626ВХ, п. 5.1.2, сумма резервирования'},
+    {pct:1, base:'total', release:'warranty', relAfter:66, inDir:true,
+     src:'ДИР!E172 = 1 %, гарантийная сумма; ДИР!D172 = 395 046,23'}
+  ]},
+  'СЭТЛ СТРОЙ|фасады':{hold:[
+    {pct:9, base:'total', release:'reserve', inDir:false,
+     src:'фасадный договор Сэтла, сумма резервирования'},
+    {pct:1, base:'total', release:'warranty', relAfter:66, inDir:true,
+     src:'фасадный договор Сэтла, гарантийная сумма'}
   ]},
   'default':{hold:[
-    {pct:5, base:'total', release:'after_warranty', inDir:true,
+    {pct:5, base:'total', release:'warranty', relAfter:12, inDir:true,
      src:'Павел 02.09, документ 10, раздел 3.6: 5 % на год после сдачи последней КС'}
   ]}
 };
-var HOLD_BASE = {smr:'СМР-часть контракта', total:'вся цена контракта', materials:'материалы контракта'};
-var HOLD_REL  = {after_ks:'сразу после КС', after_handover:'после сдачи объекта',
-                 after_warranty:'после гарантии', never:'не возвращается'};
+var HOLD_BASE = {total:'вся цена контракта (КС-3)', smr:'СМР-часть контракта', materials:'материалы контракта'};
+var HOLD_REL  = {after_ks:'сразу после КС', reserve:'резервирование, п. 5.1.2',
+                 after_handover:'после сдачи объекта', warranty:'до конца гарантии',
+                 never:'не возвращается'};
+function holdKey(){
+  var k = state.form.customer + '|' + (O.contractType || '');
+  return CUSTOMERS[k] ? k : 'default';
+}
 function holdTerms(){
   if (!O.holdTerms)
-    O.holdTerms = (CUSTOMERS[O.form.customer] || CUSTOMERS['default']).hold.map(function(h){
-      return {pct:h.pct, base:h.base, release:h.release, inDir:h.inDir, src:h.src, note:''};
+    O.holdTerms = CUSTOMERS[holdKey()].hold.map(function(h){
+      return {pct:h.pct, base:h.base, release:h.release, relAfter:h.relAfter,
+              relMonth:h.relMonth, inDir:h.inDir, src:h.src, note:''};
     });
   return O.holdTerms;
 }
@@ -874,8 +893,12 @@ OBJ.dogma = {
   prjRows:[['Проектирование', 744169.01, 'ДИР Встройка!D130'],
            ['Геодезия',        267194.69, 'ДИР Встройка!D131'],
            ['ППР',              10000.00, 'ДИР Встройка!D132']],
-  /* сроки объекта: в файле их нет, поставлены условно (документ 21, Р7) */
-  schedule:{mountStart:2, mountMonths:6, warrantyMonths:12, crewPayLag:1, cond:1},
+  /* сроки и лаги объекта. Лаги из ДДС Сената (документ 24, раздел 3):
+     заказчик платит через месяц после КС (ДДС!G14 = ДИР!F14), бригаде деньги
+     уходят через два месяца после начисления (ДДС!I134 = ДИР!G134). */
+  schedule:{mountStart:2, mountMonths:6, warrantyMonths:12,
+            customerPayLag:1, crewPayLag:2, scsMonths:4,
+            finalKsShare:0, finalKsLag:0, cond:1},
   ARTICLES:[
   {k:'gar', n:'Гарантийное обслуживание', req:'mandatory', on:true, dir:OTH,
    rec:318088.91, acc:318088.91, src:'100 ₽/м², ПРАЙС_СМР_прочее', note:'обязательна на всех объектах'},
@@ -1095,8 +1118,11 @@ OBJ.univer = {
   prjRows:[['Проектирование', 485887.50, 'ДИР!D130'],
            ['Геодезия',        236002.50, 'ДИР!D131'],
            ['Док. обеспечение строительства ППР', 10000.00, 'ДИР!D132']],
-  /* сроки объекта: в файле их нет (ДИР!D10 пусто), поставлены условно */
-  schedule:{mountStart:2, mountMonths:6, warrantyMonths:12, crewPayLag:1, cond:1},
+  contractType:'витражи',   /* витражный договор Сэтла: удержание 6 + 1 */
+  /* сроки и лаги объекта, лаги из ДДС Сената (документ 24, раздел 3) */
+  schedule:{mountStart:2, mountMonths:6, warrantyMonths:12,
+            customerPayLag:1, crewPayLag:2, scsMonths:4,
+            finalKsShare:0, finalKsLag:0, cond:1},
   /* шаг 6: статьи, свод ДИР!D143:D161 */
   ARTICLES:[
     {k:'genp', n:'Генподрядные, 1,5 % от цены контракта', req:'mandatory', on:true, dir:OTH, auto:'genpct', vat:1,
@@ -2710,6 +2736,17 @@ function ksRevenue(){
   sup.forEach(function(i){ mat[i] += matTot / sup.length; });
   var all = [];
   for (i = 0; i < n; i++) all.push(smr[i] + mat[i]);
+  /* финальная КС при сдаче: доля контракта уходит на finalKsLag месяцев позже
+     последней рабочей КС (у Сената 7 % через полгода, ДИР!AG14).
+     У Догмы и Универа доля 0, поэтому раскладка не меняется. */
+  var sc = sched();
+  if (sc.finalKsShare > 0){
+    var lastIdx = 0;
+    for (i = 0; i < n; i++) if (all[i] > 0.005) lastIdx = i;
+    var t = Math.min(n - 1, lastIdx + sc.finalKsLag), cut = sc.finalKsShare / 100;
+    for (i = 0; i < n; i++){ smr[i] *= (1 - cut); mat[i] *= (1 - cut); all[i] *= (1 - cut); }
+    smr[t] += smrTot * cut; mat[t] += matTot * cut; all[t] += K * cut;
+  }
   return {smr:smr, mat:mat, all:all, K:K, smrTot:smrTot, matTot:matTot, share:share};
 }
 /* месяцы поставки материалов: поставки начинаются за два месяца до монтажа
@@ -2719,6 +2756,27 @@ function supplyMonths(){
   var a = Math.max(0, w.a - 2), b = Math.max(a, Math.min(n - 1, Math.max(w.a, w.b - 1)));
   for (var i = a; i <= b; i++) out.push(i);
   return out.length ? out : [0];
+}
+
+/* ---- доли КС: из них строятся все автоматические раскладки ----------
+   Правила сняты с ДИР и ДДС Сената (документ 24, разделы 2 и 3), адрес
+   строки стоит у каждого правила в finTree. */
+function ksShares(){
+  var rev = ksRevenue(), K = rev.K;
+  return rev.all.map(function(v){ return K ? v / K * 100 : 0; });
+}
+function ksMonths(){
+  var sh = ksShares(), out = [];
+  sh.forEach(function(v, i){ if (v > 0.0005) out.push(i); });
+  return out.length ? out : [0];
+}
+function firstKsMonth(){ return ksMonths()[0]; }
+function finalKsMonth(){ var m = ksMonths(); return m[m.length - 1]; }
+/* доля КС на k месяцев вперёд: затраты идут раньше КС, под которую нужны */
+function shiftPct(src, k){
+  var n = src.length, a = zeros(n), i;
+  for (i = 0; i < n; i++) a[i] = (i + k < n) ? src[i + k] : 0;
+  return a;
 }
 
 /* ---- удержание по условиям договора ------------------------------- */
@@ -2737,9 +2795,11 @@ function holdFlow(){
       var v = holdBaseVal(h, rev, i) * h.pct / 100;
       arr.push(v); sum += v; held[i] += v;
     }
+    var fin = finalKsMonth();
     var rel = h.release === 'after_ks' ? 'ks'
+            : h.release === 'reserve' ? (h.relMonth != null ? h.relMonth - 1 : fin + 1)
             : h.release === 'after_handover' ? w.handover
-            : h.release === 'after_warranty' ? w.handover + sc.warrantyMonths
+            : h.release === 'warranty' ? fin + (h.relAfter || sc.warrantyMonths)
             : null;
     var returned = 0;
     if (rel === 'ks'){ arr.forEach(function(v, j){ back[j] += v; }); returned = sum; }
@@ -2783,77 +2843,96 @@ function treeState(){
 function finTree(){
   var n = nMonths(), k = factor(), w = mountWindow(), sc = sched();
   var r = calc(state.m), acc = ksAccrual(), pay = ksPay(), revA = ksRevenue().all;
-  var mountM = range(w.a, w.b);
-  var prodM  = range(Math.max(0, w.a - 1), Math.min(n - 1, w.a + Math.floor(sc.mountMonths / 2) - 1));
-  var warrM  = range(Math.min(n - 1, w.handover), Math.min(n - 1, w.handover + sc.warrantyMonths - 1));
-  var supM   = supplyMonths();
+  /* правила Андрея, документ 24, раздел 2: адреса строк ДИР Сената у каждого */
+  var sh      = ksShares();
+  var costRec = shiftPct(sh, 2);                                   // ДИР!17:69, 128, 130:132
+  var sameKs  = sh.slice();                                        // ДИР!134:135, 144:145
+  var evenKs  = spreadOver(ksMonths(), n);                         // ДИР!136:152, делитель E10
+  var firstKs = atMonth(firstKsMonth(), n);                        // ДИР!141, 155, 161
+  var lastM   = atMonth(n - 1, n);                                 // ДИР!159, за горизонтом
+  var finKs   = finalKsMonth();
+  var scsRec  = spreadOver(range(Math.max(0, finKs - sc.scsMonths + 1), finKs), n);  // ДИР!137, 139
   var secs = [];
   function sec(key, name, color){ var o = {k:key, name:name, color:color, items:[]}; secs.push(o); return o; }
-  function add(o, key, name, sum, src, rec, auto){
+  function add(o, key, name, sum, src, rec, auto, lag){
     if (Math.abs(sum) < 0.005) return;
-    o.items.push({key:o.k + '-' + key, name:name, sum:sum, src:src, rec:rec, auto:auto});
+    o.items.push({key:o.k + '-' + key, name:name, sum:sum, src:src, rec:rec, auto:auto, lag:lag || 0});
   }
 
   var sPrj = sec('proj', 'Проектирование и геодезия', 'var(--ramp-4)');
   (O.prjRows || []).forEach(function(row, i){
-    add(sPrj, 'p' + i, row[0], row[1] * k, row[2], atMonth(0, n), 'первый месяц');
+    add(sPrj, 'p' + i, row[0], row[1] * k, row[2], costRec,
+        'доля КС на два месяца вперёд, оплата через два (ДИР Сената!130:132)', 2);
   });
 
   var sMat = sec('mat', 'Материалы и закупка', 'var(--ramp-1)');
   AC.forEach(function(x, i){
     add(sMat, 'ac' + i, x.n, acNet(x) * k, 'прайс АС, колонка «' + COLS[x.col].name + '»',
-        spreadOver(supM, n), 'месяцы поставки');
+        costRec, 'доля КС на два месяца вперёд, оплата через два (ДИР Сената!17:69)', 2);
   });
   BUY.forEach(function(x, i){
     add(sMat, 'bu' + i, x.n, buySum(x) * k, x.k === 'metiz' ? 'плановая закупочная' : x.s,
-        spreadOver(supM, n), 'месяцы поставки');
+        costRec, 'доля КС на два месяца вперёд, оплата через два (ДИР Сената!17:69)', 2);
   });
   TEND.forEach(function(x, i){
     add(sMat, 'te' + i, x.n, (x.price ? x.q * x.price : 0) * k, x.why || 'цена поставщика',
-        spreadOver(supM, n), 'месяцы поставки');
+        costRec, 'доля КС на два месяца вперёд, оплата через два (ДИР Сената!17:69)', 2);
   });
   add(sMat, 'rest', 'Заполнения и прочие материалы, не разложенные в прототипе', MAT_REST * k,
-      'остаток до сверки', spreadOver(supM, n), 'месяцы поставки');
+      'остаток до сверки', costRec, 'доля КС на два месяца вперёд, оплата через два', 2);
 
   var sMan = sec('man', 'Изготовление', 'var(--ramp-3)');
   MAN.forEach(function(x, i){
     add(sMan, 'm' + i, x.n, manRowSum(x) * k, O.manNote || 'прайс ОТК',
-        spreadOver(prodM, n), 'месяцы загрузки производства');
+        costRec, 'доля КС на два месяца вперёд, оплата через два (ДИР Сената!128)', 2);
   });
 
   var sMnt = sec('mnt', 'Монтаж', 'var(--ramp-2)');
   acc.stages.forEach(function(sg){
     add(sMnt, 'st-' + sg.k, 'Этап: ' + sg.n, sg.sum * k, 'справочник монтажа, доля ' + pcs(sg.pct),
-        byArr(acc.byStage[sg.k], n), 'из выполнения по КС');
+        byArr(acc.byStage[sg.k], n),
+        'из выполнения по КС, оплата бригаде через ' + sc.crewPayLag + ' мес (ДИР Сената!134)', sc.crewPayLag);
   });
   MOUNT.forEach(function(x, i){
     if (x.crew) return;
     var fin = x.fin || (x.scs ? 'handover' : (x.auto === 'funds' ? 'pay' : 'mount'));
-    var rec = fin === 'handover' ? atMonth(w.handover, n)
-            : fin === 'pay'      ? byArr(pay, n)
-            : spreadOver(mountM, n);
-    var auto = fin === 'handover' ? 'месяц после окончания монтажа'
-             : fin === 'pay'      ? 'по выплатам бригаде'
-             : 'равномерно по месяцам монтажа';
-    add(sMnt, 'mo' + i, x.n, mountRowSum(x) * k, 'шаг ' + STEP.mount, rec, auto);
+    var rec, auto, lag;
+    if (fin === 'handover'){
+      rec = scsRec; lag = 2;
+      auto = 'равные части в ' + sc.scsMonths + ' месяца перед финальной КС (ДИР Сената!137, 139)';
+    } else if (fin === 'pay'){
+      rec = sameKs; lag = sc.crewPayLag;
+      auto = 'доля КС того же месяца, оплата через ' + sc.crewPayLag + ' мес (ДИР Сената!135)';
+    } else {
+      rec = evenKs; lag = 1;
+      auto = 'равными долями по месяцам с КС (ДИР Сената!136, 138)';
+    }
+    add(sMnt, 'mo' + i, x.n, mountRowSum(x) * k, 'шаг ' + STEP.mount, rec, auto, lag);
   });
 
   var sOth = sec('oth', 'Прочие расходы', 'var(--ramp-5)');
   ARTICLES.forEach(function(a, i){
     if (!a.on || a.dir !== OTH || a.auto === 'genpct') return;
-    var rec, auto;
-    if (a.k === 'gar'){ rec = spreadOver(warrM, n); auto = 'после сдачи, равномерно на срок гарантии'; }
-    else if (a.k === 'genv' || a.k === 'gen'){ rec = byArr(revA, n); auto = 'по выполнению'; }
-    else { rec = spreadOver(mountM, n); auto = 'равномерно по месяцам монтажа'; }
-    add(sOth, 'a' + i, a.n, artAcc(a) * k, a.src || 'шаг ' + STEP.extras, rec, auto);
+    var rec, auto, lag = 1;
+    if (a.k === 'gar'){
+      rec = lastM; lag = 0;
+      auto = 'за горизонт плана, показано в последнем месяце (ДИР Сената!159)';
+    } else if (a.k === 'genv' || a.k === 'gen' || a.k === 'genp'){
+      rec = sameKs; auto = 'доля КС того же месяца (ДИР Сената!144:145)';
+    } else if (a.k === 'adm' || a.k === 'spec'){
+      rec = firstKs; auto = 'одним платежом в первый месяц с КС (ДИР Сената!155, 161)';
+    } else {
+      rec = evenKs; auto = 'равными долями по месяцам с КС (ДИР Сената!147:152)';
+    }
+    add(sOth, 'a' + i, a.n, artAcc(a) * k, a.src || 'шаг ' + STEP.extras, rec, auto, lag);
   });
   add(sOth, 'funds', 'Маркетинг и привлечённые средства', fundsTotal() * k, 'шаг ' + STEP.budget,
-      spreadOver(mountM, n), 'равномерно по месяцам монтажа');
+      evenKs, 'равными долями по месяцам с КС', 1);
 
   if (r.genK){
     var sGen = sec('gen', 'Генподрядные, процент от цены', 'var(--ramp-4)');
     add(sGen, 'g', 'Генподрядные, процент от цены контракта', r.genK, 'ДИР!E173',
-        byArr(revA, n), 'по выполнению');
+        sameKs, 'процент от КС того же месяца (ДИР Сената!144 = E173 × КС)', 1);
   }
 
   /* суммы разделов и рекомендация раздела, взвешенная по статьям */
@@ -2900,37 +2979,57 @@ var FIN_SUM = {
 function finCalc(avans, delay){
   var r = calc(state.m), K = r.K, n = nMonths();
   avans = (avans === undefined ? FIN.avans : avans);
-  delay = (delay === undefined ? FIN.delay : delay);
+  delay = (delay === undefined ? sched().customerPayLag : delay);
 
   var secs = finTree();
-  var outflow = zeros(n), i;
-  secs.forEach(function(o){ o.arr.forEach(function(v, j){ outflow[j] += v; }); });
+  /* начисление это ДИР, платёж это ДДС: каждая статья уходит в деньги
+     со своим лагом (документ 24, раздел 3) */
+  var accrued = zeros(n), outflow = zeros(n), i;
+  secs.forEach(function(o){
+    o.arr.forEach(function(v, j){ accrued[j] += v; });
+    o.items.forEach(function(x){
+      x.arr.forEach(function(v, j){ outflow[Math.min(n - 1, j + (x.lag || 0))] += v; });
+    });
+  });
 
   /* акты закрываются выполнением по КС, оно же даёт выручку */
   var rev = ksRevenue(), act = rev.all;
   var actSum = act.reduce(function(a, b){ return a + b; }, 0);
   var tax = r.margin - r.profit;
+  /* НДС и налог на прибыль ДИР считает раз в квартал одним платежом
+     (ДИР Сената!J169, J170), а не помесячно */
+  function quarterly(arr){
+    var out = zeros(n), acc2 = 0, j;
+    for (j = 0; j < n; j++){
+      acc2 += arr[j];
+      if (j % 3 === 2 || j === n - 1){ out[j] = acc2; acc2 = 0; }
+    }
+    return out;
+  }
   var extra = [
     {name:'Накладные 10 %', k:'ovh', sum:r.ovh,
      arr:act.map(function(){ return r.ovh / n; }), hint:'считаются от цены контракта, делятся ровно'},
     {name:'НДС к уплате', k:'vat', sum:r.vatOut,
-     arr:act.map(function(a){ return actSum ? r.vatOut * a / actSum : 0; }), hint:'привязан к закрытым актам'},
+     arr:quarterly(act.map(function(a){ return actSum ? r.vatOut * a / actSum : 0; })),
+     hint:'раз в квартал одним платежом, ДИР Сената!J169'},
     {name:'Налог на прибыль 25 %', k:'tax', sum:tax,
-     arr:act.map(function(a){ return actSum ? tax * a / actSum : 0; }), hint:'платится по мере закрытия актов'}
+     arr:quarterly(act.map(function(a){ return actSum ? tax * a / actSum : 0; })),
+     hint:'раз в квартал одним платежом, ДИР Сената!J170'}
   ];
-  extra.forEach(function(e){ e.arr.forEach(function(v, j){ outflow[j] += v; }); });
+  extra.forEach(function(e){ e.arr.forEach(function(v, j){ outflow[j] += v; accrued[j] += v; }); });
 
   /* поступления: аванс сразу, акты за вычетом зачёта аванса и удержания
      со сдвигом на отсрочку, плюс возврат удержания в свой месяц */
   var hf = holdFlow();
   var inflow = zeros(n), av = K * avans / 100, tail = 0;
   inflow[0] += av;
-  var lag = delay / 30, li = Math.floor(lag), fr = lag - li;
+  /* заказчик платит через customerPayLag месяцев после КС (ДДС Сената!G14 = ДИР!F14),
+     аванс зачитывается пропорционально КС, как ДДС!202 */
+  var li = Math.max(0, Math.round(delay));
   act.forEach(function(a, j){
     var v = a * (1 - avans / 100) - hf.held[j];
-    var i1 = j + li, iN = j + li + 1, p1 = v * (1 - fr), p2 = v * fr;
-    if (i1 < n) inflow[i1] += p1; else tail += p1;
-    if (fr > 0){ if (iN < n) inflow[iN] += p2; else tail += p2; }
+    var i1 = j + li;
+    if (i1 < n) inflow[i1] += v; else tail += v;
   });
   hf.back.forEach(function(v, j){ inflow[j] += v; });
 
@@ -2940,14 +3039,14 @@ function finCalc(avans, delay){
     bal.push(accm);
     if (accm < minB){ minB = accm; minI = j; }
   }
-  return {K:K, n:n, secs:secs, extra:extra, act:act, rev:rev, hold:hf,
+  return {K:K, n:n, secs:secs, extra:extra, act:act, rev:rev, hold:hf, accrued:accrued,
           inflow:inflow, outflow:outflow, bal:bal, min:minB, minI:minI, tail:tail,
           avansSum:av, holdSum:hf.irrevocable, r:r};
 }
 
 function needAvans(){
   for (var a = 0; a <= 60; a += 0.5)
-    if (finCalc(a, FIN.delay).min >= 0) return a;
+    if (finCalc(a, sched().customerPayLag).min >= 0) return a;
   return null;
 }
 
@@ -3005,9 +3104,9 @@ function finChart(F){
 }
 
 var SCENARIOS = [
-  {id:0, name:'Без аванса',        a:0,  d:30, sub:'оплата по актам, отсрочка 30 дней'},
-  {id:1, name:'Аванс 30 %',        a:30, d:30, sub:'зачёт аванса пропорционально в актах'},
-  {id:2, name:'Отсрочка 45 дней',  a:0,  d:45, sub:'без аванса, оплата на 45-й день'}
+  {id:0, name:'Без аванса',            a:0,  d:1, sub:'оплата через месяц после КС, как ДДС!G14'},
+  {id:1, name:'Аванс 30 %',            a:30, d:1, sub:'зачёт аванса пропорционально КС, как ДДС!202'},
+  {id:2, name:'Оплата на второй месяц', a:0,  d:2, sub:'без аванса, деньги через два месяца после КС'}
 ];
 
 /* дерево статей по месяцам: раздел сворачивается до статей */
@@ -3055,8 +3154,9 @@ function treePanel(F){
       '<div style="font-size:10.5px;color:var(--faint)">' + e.hint + '</div></td>' + tds +
       '<td class="r num">' + f(e.sum) + '</td><td></td></tr>';
   }).join('');
-  var totOut = '', totIn = '', totBal = '', totAct = '';
+  var totOut = '', totIn = '', totBal = '', totAct = '', totAcc = '';
   for (var j = 0; j < n; j++){
+    totAcc += '<td class="r num" style="color:var(--faint)">' + f(F.accrued[j]) + '</td>';
     totOut += '<td class="r num">' + f(F.outflow[j]) + '</td>';
     totIn  += '<td class="r num">' + f(F.inflow[j]) + '</td>';
     totAct += '<td class="r num">' + f(F.act[j]) + '</td>';
@@ -3066,7 +3166,11 @@ function treePanel(F){
   return panel('Затраты по статьям и месяцам', pct ? 'значения в % от строки' : 'значения в ₽',
     '<div class="tw months"><table><thead><tr><th>Раздел и статья</th>' + monthCols() +
     '<th class="r">Всего, ₽</th><th>Примечание</th></tr></thead><tbody>' + rows + extraRows +
-    '<tr style="border-top:1px solid var(--line-strong)"><td class="nm"><b>Платежи, всего</b></td>' + totOut +
+    '<tr style="border-top:1px solid var(--line-strong)"><td class="nm">Начислено, всего' +
+      '<div style="font-size:10.5px;color:var(--faint)">как в ДИР: месяц, когда затрата возникла</div></td>' + totAcc +
+      '<td class="r num">' + f(F.accrued.reduce(function(a, b){ return a + b; }, 0)) + '</td><td></td></tr>' +
+    '<tr><td class="nm"><b>Платежи, всего</b>' +
+      '<div style="font-size:10.5px;color:var(--faint)">как в ДДС: со сдвигом оплаты по каждой статье</div></td>' + totOut +
       '<td class="r num">' + f(F.outflow.reduce(function(a, b){ return a + b; }, 0)) + '</td><td></td></tr>' +
     '<tr class="inflow"><td class="nm">Выполнение по КС (акты)' +
       '<div style="font-size:10.5px;color:var(--faint)">из блока выполнения выше</div></td>' + totAct +
@@ -3131,9 +3235,18 @@ function ksPanel(){
     '<div><div class="field-lbl">Гарантия, месяцев</div>'+
       '<input type="text" class="'+(sc.cond?'':'auto-in')+'" data-sched="warrantyMonths" value="'+sc.warrantyMonths+'" aria-label="Гарантия, месяцев">'+
       '<div class="field-note">от месяца сдачи</div></div>'+
-    '<div><div class="field-lbl">Сдвиг оплаты бригаде, месяцев</div>'+
+    '<div><div class="field-lbl">Оплата бригаде, месяцев после начисления</div>'+
       '<input type="text" class="auto-in" data-sched="crewPayLag" value="'+sc.crewPayLag+'" aria-label="Сдвиг оплаты бригаде">'+
-      '<div class="field-note">'+cond('после оплаты заказчиком','Р6 не отвечен: после подписания или после оплаты')+'</div></div>'+
+      '<div class="field-note">ДДС Сената!I134 = ДИР!G134: через месяц после того, как заплатил заказчик</div></div>'+
+    '<div><div class="field-lbl">Сдача СКС и клининг, месяцев перед финальной КС</div>'+
+      '<input type="text" class="auto-in" data-sched="scsMonths" value="'+sc.scsMonths+'" aria-label="Месяцев перед финальной КС">'+
+      '<div class="field-note">ДИР Сената!137, 139: четыре равные части</div></div>'+
+    '<div><div class="field-lbl">Финальная КС при сдаче, % контракта</div>'+
+      '<input type="text" class="auto-in" data-sched="finalKsShare" value="'+sc.finalKsShare+'" aria-label="Доля финальной КС">'+
+      '<div class="field-note">у Сената 7 % через полгода (ДИР!AG14), у этого объекта доли нет</div></div>'+
+    '<div><div class="field-lbl">Финальная КС, месяцев после последней рабочей</div>'+
+      '<input type="text" class="auto-in" data-sched="finalKsLag" value="'+sc.finalKsLag+'" aria-label="Сдвиг финальной КС">'+
+      '<div class="field-note">считается от месяца последней рабочей КС</div></div>'+
     '</div>'+
 
     '<div class="tw months"><table><thead><tr><th>Этап</th>'+monthCols()+'<th class="r">Всего, ₽</th></tr></thead>'+
@@ -3197,7 +3310,15 @@ function holdPanel(readOnly){
             return '<option value="'+b+'"'+(b===h.release?' selected':'')+'>'+HOLD_REL[b]+'</option>'; }).join('')+
           '</select>')+'</td>'+
       '<td class="r num">'+f(t.sum)+'</td>'+
-      '<td>'+(t.returned ? 'возвращается '+(t.rel==='ks'?'сразу':FIN.months[t.rel]) : 'за горизонтом плана')+'</td>'+
+      '<td>'+(t.returned ? 'возвращается '+(t.rel==='ks'?'сразу':FIN.months[t.rel]) : 'за горизонтом плана')+
+        (h.release === 'reserve'
+          ? '<div class="field"><input type="text" class="'+(h.relMonth?'':'auto-in')+'" data-hold="'+i+
+            '|relMonth" value="'+(h.relMonth || (finalKsMonth()+2))+'" aria-label="Месяц возврата">'+
+            '<span class="sum-unit">мес</span></div>'+
+            '<div class="field-note">'+cond('месяц после финальной КС','пункт 5.1.2 договора не прислали, Р1')+'</div>'
+          : (h.release === 'warranty'
+              ? '<div class="field-note">через '+(h.relAfter || sched().warrantyMonths)+' месяцев после финальной КС</div>'
+              : ''))+'</td>'+
       '<td>'+(h.inDir ? '<span class="pill p-auto">в ДИР</span>' : '<span class="pill p-tender">только движение денег</span>')+'</td>'+
       '<td class="mono" style="font-size:11px;color:var(--muted)">'+h.src+'</td></tr>';
   }).join('');
@@ -3232,7 +3353,7 @@ views_8 = function(){
 
   var scn = SCENARIOS.map(function(s){
     var C2 = finCalc(s.a, s.d);
-    var cur = (FIN.avans === s.a && FIN.delay === s.d);
+    var cur = (FIN.avans === s.a && sched().customerPayLag === s.d);
     return '<tr' + (cur ? ' style="background:var(--sunken)"' : '') + '><td><b>' + s.name + '</b>' +
       '<div style="font-size:10.5px;color:var(--faint)">' + s.sub + '</div></td>' +
       '<td class="r num">' + f(C2.avansSum) + '</td>' +
@@ -3257,9 +3378,10 @@ views_8 = function(){
     '<div><div class="eyebrow">Аванс, % от контракта</div>' +
       '<div class="field" style="margin-top:6px"><input type="text" id="finAvans" value="' + FIN.avans + '"><span class="sum-unit">%</span></div>' +
       '<div class="field-note">' + f(F.avansSum) + ' ₽, зачитывается в актах</div></div>' +
-    '<div><div class="eyebrow">Отсрочка оплаты, дней</div>' +
-      '<div class="field" style="margin-top:6px"><input type="text" id="finDelay" value="' + FIN.delay + '"><span class="sum-unit">дн</span></div>' +
-      '<div class="field-note">от подписания акта до денег</div></div>' +
+    '<div><div class="eyebrow">Оплата заказчиком, месяцев после КС</div>' +
+      '<div class="field" style="margin-top:6px"><input type="text" data-sched="customerPayLag" value="' +
+      sched().customerPayLag + '"><span class="sum-unit">мес</span></div>' +
+      '<div class="field-note">ДДС Сената!G14 = ДИР!F14, то же в договоре: 15 рабочих дней после КС-2/КС-3</div></div>' +
     '<div><div class="eyebrow">Удержание</div>' +
       '<div class="sum-big" style="font-size:20px;margin-top:6px">' + f(F.hold.heldSum) + ' ₽</div>' +
       '<div class="field-note">возвратное ' + f(F.hold.backSum) + ' ₽, невозвратное ' + f(F.hold.irrevocable) +
@@ -3495,7 +3617,7 @@ document.getElementById('stage').addEventListener('click', function(e){
   }
   if ((t = e.target.closest('[data-scn]'))){
     var s = SCENARIOS[+t.dataset.scn];
-    FIN.avans = s.a; FIN.delay = s.d; renderStage(); return;
+    FIN.avans = s.a; O.schedule.customerPayLag = s.d; renderAll(); return;
   }
   if (state.mode === 'list' && (t = e.target.closest('[data-obj]'))){
     var o = OBJECTS[+t.dataset.obj];
