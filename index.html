@@ -89,6 +89,7 @@ tr.obj-row[aria-current="true"] td:first-child{box-shadow:inset 2px 0 0 var(--in
 .stage-pill.now{background:var(--ink);color:var(--ground);font-weight:500}
 .obj-name{font-weight:500;color:var(--ink)}
 .obj-sub{font-size:11px;color:var(--faint);margin-top:1px}
+.obj-row td:first-child .obj-sub{padding-left:18px}
 
 /* ---------- shell ---------- */
 .shell{display:grid;grid-template-columns:minmax(0,1fr) 296px;gap:0;align-items:start}
@@ -350,6 +351,17 @@ input[type=range]{width:100%;margin:8px 0 0;accent-color:var(--ink);background:t
 .legend2 span{display:flex;gap:6px;align-items:center;font-size:11px;color:var(--muted)}
 .legend2 i{width:10px;height:10px;border-radius:2px;flex:none}
 
+
+/* ---------- «Что мешает» ---------- */
+details.fold.blk{border:1px solid var(--line-strong)}
+tr.blk-row{cursor:pointer}
+tr.blk-row:hover{background:var(--sunken)}
+tr.blk-row[data-over="1"] td:first-child{box-shadow:inset 2px 0 0 var(--p-missing)}
+.draft-norm{color:var(--p-manual)}
+.obj-sub-row{cursor:pointer}
+.obj-sub-row td{color:var(--muted)}
+.obj-sub-row td:first-child{padding-left:30px}
+.late-n{color:var(--p-missing);font-weight:600}
 
 /* ---------- лента: восемь разделов подряд ---------- */
 .lenta-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
@@ -840,6 +852,7 @@ var state = {
   view: 'steps',    // steps | lenta, второй формат интерфейса, С3
   fold: {},         // свёрнутые разделы ленты
   sumMore: false,   // «подробно» в итоге ленты
+  blkOpen: null,    // «Что мешает»: null — по умолчанию, дальше выбор пользователя
   m: 0.3966571,
   mode: 'object',
   block: 'all',
@@ -2523,7 +2536,191 @@ function oldFormModal(){
 /* ==================================================================
    Справочник поставщиков и журнал запросов
    ================================================================== */
-var TODAY = '09.09.2026';
+var TODAY = '10.09.2026';
+
+/* ==================================================================
+   «Что мешает», С2, и аналитика реестра, С1.
+   Строки собираются из данных объекта, текстом ничего не вписывается.
+   Нормативы держим справочником: часть подтверждена Павлом 07.09,
+   часть черновая и показана охрой, пока не отвечен вопрос В3.
+   ================================================================== */
+var NORMS = {
+  calc:   {n:'расчёт объекта',                 h:5,  src:'Павел 07.09'},
+  supply: {n:'подтверждение цен поставщиков',  h:24, src:'Павел 07.09'},
+  dict:   {n:'ответ на вопрос по справочнику', h:48, src:'черновик, норматив ждём от Павла, В3', draft:true},
+  rp:     {n:'ответ РП',                       h:48, src:'черновик, норматив ждём от Павла, В3', draft:true}
+};
+
+/* Открытые вопросы, от которых зависят цифры объекта. Формулировки взяты из
+   «18_Реестр_замечаний_к_прототипу.md». В8 в реестре нет, её текст берётся
+   из condNote объекта, поэтому строка помечена cond и собирается по данным. */
+var ISSUES = [
+  {n:'В1', from:'07.09.2026', who:'Павел и Андрей', norm:'rp', steps:[3], objs:['dogma','univer'],
+   txt:'Метизы напрямую или через системодержателя'},
+  {n:'В7', from:'08.09.2026', who:'Андрей', norm:'dict', steps:[2], objs:['dogma','univer'],
+   txt:'Какие системы и артикулы к какой из трёх колонок скидок (ВС-36/ФС-50/SL, Aurora, РосПроф + ENSAVE AVA)'},
+  {n:'В8', from:'', who:'Андрей', norm:'dict', steps:[1], objs:['dogma'], cond:true, txt:''},
+  {n:'Р1', from:'10.09.2026', who:'Сергей', norm:'rp', steps:[8], objs:['univer'],
+   txt:'Текст п. 5.1.2 договора с Сэтлом: когда возвращается сумма резервирования (6 % по витражам, 9 % по фасадам)'},
+  {n:'Р9', from:'10.09.2026', who:'Сергей и Никита', norm:'rp', steps:[8], objs:['univer'],
+   txt:'База удержания: вся сумма КС-3 (ДИР Андрея, договор) или СМР-часть по КС-2 (Никита)'},
+  {n:'Р10', from:'10.09.2026', who:'Сергей', norm:'rp', steps:[8], objs:['univer'],
+   txt:'Разбивка по видам работ одинакова для всех семи секций Универа или отличается'}
+];
+function issueBy(n){ for (var i = 0; i < ISSUES.length; i++) if (ISSUES[i].n === n) return ISSUES[i]; return null; }
+
+/* даты в прототипе записаны как ДД.ММ.ГГГГ */
+function dParse(d){
+  var p = String(d || '').split('.');
+  if (p.length !== 3) return null;
+  var t = Date.UTC(+p[2], +p[1] - 1, +p[0]);
+  return isNaN(t) ? null : t;
+}
+/* календарные часы: дни × 24. В боевой версии считаются рабочие часы
+   и от времени события, а не от даты */
+function hoursSince(d){
+  var a = dParse(d), b = dParse(TODAY);
+  if (a === null || b === null) return null;
+  return Math.max(0, Math.round((b - a) / 36e5));
+}
+function daysBetween(a, b){
+  var x = dParse(a), y = dParse(b);
+  if (x === null || y === null) return null;
+  return Math.max(0, Math.round((y - x) / 864e5));
+}
+function plDay(n){
+  var t = n % 10, h = n % 100;
+  return n + (t === 1 && h !== 11 ? ' день' : (t >= 2 && t <= 4 && (h < 10 || h >= 20) ? ' дня' : ' дней'));
+}
+function plRow(n){
+  var t = n % 10, h = n % 100;
+  return n + (t === 1 && h !== 11 ? ' строка' : (t >= 2 && t <= 4 && (h < 10 || h >= 20) ? ' строки' : ' строк'));
+}
+function plReq(n){
+  var t = n % 10, h = n % 100;
+  return n + (t === 1 && h !== 11 ? ' запрос' : (t >= 2 && t <= 4 && (h < 10 || h >= 20) ? ' запроса' : ' запросов'));
+}
+/* дата снятия черновика запроса по товарной группе: журнал запросов помнит,
+   когда стало ясно, что цену спрашивать не у кого */
+function offDateFor(g){
+  var d = '';
+  REQUESTS.forEach(function(x){ if (x.g === g && x.st === 'off' && x.resp) d = x.resp; });
+  return d;
+}
+
+/* строки «Что мешает» по текущему объекту */
+function blockers(){
+  var out = [], oid = O.id;
+  function add(o){
+    var nm = NORMS[o.norm];
+    o.normH = nm.h; o.normSrc = nm.src; o.normName = nm.n; o.draft = !!nm.draft;
+    o.h = hoursSince(o.from);
+    o.over = o.h !== null && o.h > nm.h;
+    out.push(o);
+    return o;
+  }
+  /* 1. позиции без цены: держит снабжение */
+  TEND.forEach(function(r){
+    if (r.st !== 'missing') return;
+    add({kind:'missing', what:'Позиция без цены: ' + r.n, step:STEP.tender, who:'Снабжение',
+         from:'', norm:'supply'});
+  });
+  TEND.forEach(function(r){
+    if (r.st !== 'nodict') return;
+    add({kind:'nodict', what:'Кода нет в справочнике компании: ' + r.n, step:STEP.tender,
+         who:'Конструкторский отдел', from:offDateFor(r.g), norm:'dict'});
+  });
+  var kmd = TEND.filter(function(r){ return r.st === 'kmd'; });
+  if (kmd.length) add({kind:'kmd', what:'Ждём КМД, без него ОТК не считает изготовление: ' +
+      plPos(kmd.length), step:STEP.tender, who:'Конструкторский отдел',
+      from:offDateFor(kmd[0].g), norm:'dict'});
+
+  /* 2. запросы поставщикам без ответа, сгруппированные по товарной группе */
+  var waiting = {}, grp = {}, gs = [];
+  TEND.forEach(function(r){ if (r.st === 'tender' || r.st === 'missing') waiting[r.g] = 1; });
+  REQUESTS.forEach(function(r){
+    if (r.st !== 'sent' || !waiting[r.g]) return;
+    if (!grp[r.g]){ grp[r.g] = {g:r.g, n:0, date:r.date, sups:[]}; gs.push(r.g); }
+    var x = grp[r.g];
+    x.n++;
+    if (dParse(r.date) < dParse(x.date)) x.date = r.date;
+    var sp = supById(r.sup);
+    if (sp && x.sups.indexOf(sp.name) < 0) x.sups.push(sp.name);
+  });
+  gs.forEach(function(g){
+    var x = grp[g];
+    add({kind:'kp', what:'Нет ответа на запрос КП: ' + g + ', ' + plReq(x.n) + ' от ' + x.date,
+         step:STEP.tender, who:x.sups.join(', '), from:x.date, norm:'supply', grp:g});
+  });
+
+  /* 3. карантин: данные есть, но им нельзя верить */
+  QUAR2.forEach(function(qq){
+    add({kind:'quar', what:'Карантин прайса: ' + qq.n + ', ' + qq.addr, step:STEP.price,
+         who:'Андрей', from:'', norm:'dict'});
+  });
+  QUAR6.forEach(function(qq){
+    add({kind:'quar', what:'Карантин прайса: ' + qq.n + ', ' + qq.addr, step:STEP.extras,
+         who:'Андрей', from:'', norm:'dict'});
+  });
+
+  /* 4. условные данные объекта: у Догмы это навеска, вопрос В8 */
+  if (O.condBlock){
+    var v8 = issueBy('В8');
+    add({kind:'cond', tag:'В8', what:'В8. Условные данные объекта: ' + O.condNote,
+         step:STEP.ozm, who:v8.who, from:v8.from, norm:v8.norm});
+  }
+
+  /* 5. открытые вопросы, от которых зависят цифры этого объекта */
+  ISSUES.forEach(function(x){
+    if (x.cond) return;                       // условные данные уже добавлены выше
+    if (x.objs.indexOf(oid) < 0) return;
+    add({kind:'issue', tag:x.n, what:x.n + '. ' + x.txt, step:x.steps[0], who:x.who,
+         from:x.from, norm:x.norm});
+  });
+
+  /* сначала просроченное, внутри — по времени ожидания */
+  out.sort(function(a, b){
+    if (a.over !== b.over) return a.over ? -1 : 1;
+    return (b.h === null ? -1 : b.h) - (a.h === null ? -1 : a.h);
+  });
+  return out;
+}
+
+function blockersPanel(){
+  var B = blockers();
+  if (!B.length) return '';
+  var over = B.filter(function(x){ return x.over; }).length;
+  var ST = steps();
+  var rows = B.map(function(x){
+    var st = ST[x.step - 1];
+    return '<tr class="blk-row" data-go="' + x.step + '">' +
+      '<td>' + x.what + '</td>' +
+      '<td style="white-space:nowrap">Шаг ' + x.step + ' · ' + (st ? st.name : '') + '</td>' +
+      '<td>' + (x.who || '—') + '</td>' +
+      '<td class="r' + (x.draft ? ' draft-norm' : '') + '" title="' + x.normName + ': ' + x.normSrc + '">' +
+        x.normH + ' ч' + (x.draft ? ' *' : '') + '</td>' +
+      '<td class="r num">' + (x.h === null ? '<span style="color:var(--faint)">дата не записана</span>' : x.h + ' ч') + '</td>' +
+      '<td>' + (x.h === null ? '<span class="pill p-manual">срок не идёт</span>'
+              : (x.over ? '<span class="pill p-missing">просрочено</span>'
+                        : '<span class="pill p-auto">в срок</span>')) + '</td></tr>';
+  }).join('');
+  var open = state.blkOpen === null ? over > 0 : state.blkOpen;
+  return '<details class="fold blk" id="blk"' + (open ? ' open' : '') + '>' +
+    '<summary><span class="eyebrow">Что мешает · ' + plRow(B.length) + '</span>' +
+    '<span class="eyebrow"' + (over ? ' style="color:var(--p-missing)"' : '') + '>' +
+      (over ? over + ' просрочено' : 'просрочек нет') + '</span></summary>' +
+    '<div class="fold-body">' +
+    '<div class="tw"><table><thead><tr><th>Что мешает</th><th>Где</th><th>Кто держит</th>' +
+    '<th class="r">Норматив</th><th class="r">Прошло</th><th>Срок</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody></table></div>' +
+    '<div class="note">Строки собираются из данных объекта: позиции без цены, запросы поставщикам без ответа, ' +
+    'карантин прайсов, условные данные и открытые вопросы из реестра замечаний. ' +
+    'Время считается в <b>календарных часах</b> (дни × 24) от даты события до ' + TODAY + '; ' +
+    'в боевой версии считаются рабочие часы и от времени события, а не от даты. ' +
+    'Нормативы <span class="draft-norm">охрой со звёздочкой</span> черновые, ждём Павла: <b>вопрос В3</b>. ' +
+    'Подтверждены Павлом 07.09 только расчёт объекта ' + NORMS.calc.h + ' ч и подтверждение цен поставщиков ' +
+    NORMS.supply.h + ' ч.</div></div></details>';
+}
 
 var GROUPS = ['Стеклопакеты','Стекло и ограждения','Вентрешётки',
               'Профиль и комплектующие','Метизы и крепёж','Герметики и клеи'];
@@ -3805,58 +4002,169 @@ views_8 = function(){
 /* ==================================================================
    Список объектов
    ================================================================== */
+/* Реестр объектов, С1. Догма одной строкой объекта: договор один, ДИР общий,
+   встройка и навеска это блоки одного объекта (С6, Андрей 08.09). У Догмы и
+   Универа «Где стоит», «В расчёте», «Кто держит» и «Просрочек» считаются из их
+   данных тем же кодом, что блок «Что мешает». Остальные строки примерные:
+   значения вписаны полями и помечены в панели «Про эти цифры». */
 var OBJECTS = [
-  {obj:'dogma', name:'Догма Юкки, секции 1–3', variant:'Встройка · BC-36.2 vstroyka', cust:'Догма', st:'Тендер',
-   s:3180.889, cost:38778638.92, price:54160461.63, profit:0.08, who:'Груздев И.', date:'26.08.2026'},
-  {obj:'dogma', name:'Догма Юкки, секции 1–3', variant:'Навеска · BC-36.2 navesnaya', cust:'Догма', st:'Тендер',
-   s:1073.00, cost:13081084.81, price:18269789.97, profit:0.08, who:'Груздев И.', date:'условно', block:'nav'},
-  {obj:'univer', name:'Универ сити, корпус 9', variant:'Холодные витражи ВС-36, навесные, пилон наружу · 7 секций', cust:'СЭТЛ СТРОЙ', st:'Выигран',
-   s:2853.13, cost:27488808.997, price:39504623.12, profit:0.0953, who:'Ротко (РП)', date:'ОЗМ рабочий, 09.09.2026'},
+  {obj:'dogma', name:'Догма Юкки, секции 1–3', variant:'Встройка и навеска, два блока одного объекта',
+   cust:'Догма', st:'Тендер', s:3180.889 + 1073.00, cost:38778638.92 + 13081084.81,
+   price:54160461.63 + 18269789.97, profit:0.08, who:'Груздев И.', date:'26.08.2026',
+   started:'04.09.2026',
+   sub:[{name:'Встройка · BC-36.2 vstroyka', block:'vstr', s:3180.889, cost:38778638.92,
+         price:54160461.63, profit:0.08, date:'ОЗМ от 26.08.2026'},
+        {name:'Навеска · BC-36.2 navesnaya', block:'nav', s:1073.00, cost:13081084.81,
+         price:18269789.97, profit:0.08, date:'условно, В8'}]},
+  {obj:'univer', name:'Универ сити, корпус 9',
+   variant:'Холодные витражи ВС-36, навесные, пилон наружу · 7 секций', cust:'СЭТЛ СТРОЙ', st:'Выигран',
+   s:2853.13, cost:27488808.997, price:39504623.12, profit:0.0953, who:'Ротко (РП)',
+   date:'ОЗМ рабочий, 09.09.2026', started:'02.09.2026', fixed:'09.09.2026'},
   {name:'Котельники К11', variant:'Холодные витражи, пилон внутрь', cust:'ГК Самолёт', st:'Расчёт',
-   s:1620.00, cost:17840000, price:null, profit:null, who:'Груздев И.', date:'01.09.2026'},
+   s:1620.00, cost:17840000, price:null, profit:null, who:'Груздев И.', date:'01.09.2026',
+   ex:1, started:'01.09.2026', exStep:3, exStepName:'Закупка и тендер', exWho:'Снабжение', exLate:2},
   {name:'Level Причальный', variant:'Фасад, ленточное остекление', cust:'Level Group', st:'Выигран',
-   s:7480.00, cost:82150000, price:118400000, profit:0.104, who:'Кирилл С.', date:'14.07.2026'},
+   s:7480.00, cost:82150000, price:118400000, profit:0.104, who:'Кирилл С.', date:'14.07.2026',
+   ex:1, started:'01.07.2026', fixed:'14.07.2026', exStep:8, exStepName:'Финансовый план',
+   exWho:'Кирилл С.', exLate:0},
   {name:'Ташкент Сити, блок 4', variant:'ENSAVE AV-65, Узбекистан', cust:'UzDevelopment', st:'Тендер',
-   s:4260.00, cost:41300000, price:57000000, profit:0.071, who:'Кирилл С.', date:'20.08.2026'},
+   s:4260.00, cost:41300000, price:57000000, profit:0.071, who:'Кирилл С.', date:'20.08.2026',
+   ex:1, started:'20.08.2026', exStep:6, exStepName:'Статьи затрат', exWho:'Андрей', exLate:1},
   {name:'Символ, корпус 4', variant:'Aurora A77, окна и двери', cust:'Донстрой', st:'Проигран',
-   s:2940.00, cost:33900000, price:46100000, profit:0.062, who:'Груздев И.', date:'03.06.2026'}
+   s:2940.00, cost:33900000, price:46100000, profit:0.062, who:'Груздев И.', date:'03.06.2026',
+   ex:1, started:'20.05.2026', fixed:'03.06.2026', exStep:7, exStepName:'Тендерный бюджет',
+   exWho:'Груздев И.', exLate:0}
 ];
+var IN_WORK = {'Тендер':1, 'Расчёт':1};
+var listOpen = {};      // раскрытые строки блоков в реестре
+
+/* объект временно становится текущим: «Где стоит» и «Что мешает» считаются
+   тем же кодом, что и внутри объекта, а не отдельной копией правил */
+function withObject(id, fn){
+  if (!OBJ[id]) return null;
+  if (O && O.id === id) return fn();
+  var back = O.id, r;
+  loadObject(id);
+  r = fn();
+  loadObject(back);
+  return r;
+}
+function objInfo(o){
+  if (!o.obj){
+    var d = daysBetween(o.started, o.fixed || TODAY);
+    return {step:o.exStep, stepName:o.exStepName, days:d, who:o.exWho, over:o.exLate || 0, ex:true};
+  }
+  return withObject(o.obj, function(){
+    var ST = steps(), i, st = null;
+    for (i = 0; i < ST.length; i++) if (ST[i].st !== 'done'){ st = ST[i]; break; }
+    if (!st) st = ST[ST.length - 1];
+    var B = blockers(), late = B.filter(function(x){ return x.over; });
+    return {step:st.n, stepName:st.name, days:daysBetween(o.started, o.fixed || TODAY),
+            who:late.length ? late[0].who : o.who, over:late.length, ex:false};
+  });
+}
 
 function objectsView(){
-  var rows = OBJECTS.map(function(o,i){
-    var cur = o.obj === O.id && (!o.block || o.block === state.block);
-    o.cur = cur;
-    return '<tr class="obj-row" data-obj="'+i+'"'+(cur?' aria-current="true"':'')+(o.obj?' data-obj-id="'+o.obj+'"':'')+'>'+
-      '<td><div class="obj-name">'+o.name+'</div><div class="obj-sub">'+o.variant+'</div></td>'+
-      '<td>'+o.cust+'</td>'+
-      '<td><span class="stage-pill'+(o.cur?' now':'')+'">'+(o.cur?'открыт':o.st)+'</span></td>'+
-      '<td class="r num">'+f2(o.s)+'</td>'+
-      '<td class="r num">'+mln(o.cost)+'</td>'+
-      '<td class="r num">'+(o.price?mln(o.price):'—')+'</td>'+
-      '<td class="r num">'+(o.profit?f2(o.profit*100)+' %':'—')+'</td>'+
-      '<td>'+o.who+'</td><td class="mono" style="font-size:11px;color:var(--faint)">'+o.date+'</td></tr>';
+  var info = OBJECTS.map(objInfo);
+  /* сортировка: сначала с просрочкой, потом по дням в расчёте */
+  var order = OBJECTS.map(function(o, i){ return i; }).sort(function(a, b){
+    var ia = info[a], ib = info[b];
+    if ((ia.over > 0) !== (ib.over > 0)) return ia.over > 0 ? -1 : 1;
+    if (ib.over !== ia.over) return ib.over - ia.over;
+    return (ib.days == null ? -1 : ib.days) - (ia.days == null ? -1 : ia.days);
+  });
+
+  var rows = order.map(function(i){
+    var o = OBJECTS[i], n = info[i];
+    var cur = o.obj === O.id;
+    var open = !!listOpen[i];
+    var head = '<tr class="obj-row" data-obj="' + i + '"' + (cur ? ' aria-current="true"' : '') +
+      (o.obj ? ' data-obj-id="' + o.obj + '"' : '') + '>' +
+      '<td>' + (o.sub
+        ? '<button class="expander" data-list-open="' + i + '" aria-expanded="' + open + '" ' +
+          'aria-label="Блоки объекта">' + (open ? '▾' : '▸') + '</button>'
+        : '<span class="expander" style="cursor:default">·</span>') +
+      '<span class="obj-name">' + o.name + '</span><div class="obj-sub">' + o.variant + '</div></td>' +
+      '<td>' + o.cust + '</td>' +
+      '<td><span class="stage-pill' + (cur ? ' now' : '') + '">' + (cur ? 'открыт' : o.st) + '</span></td>' +
+      '<td>' + (n.step ? 'Шаг ' + n.step + ' · ' + n.stepName : '—') +
+        (n.ex ? ' <span class="cond-mark" title="условно: строка примерная">пример</span>' : '') + '</td>' +
+      '<td class="r num">' + f2(o.s) + '</td>' +
+      '<td class="r num">' + mln(o.cost) + '</td>' +
+      '<td class="r num">' + (o.price ? mln(o.price) : '—') + '</td>' +
+      '<td class="r num">' + (o.profit ? f2(o.profit * 100) + ' %' : '—') + '</td>' +
+      '<td class="r num">' + (n.days == null ? '—' : n.days) + '</td>' +
+      '<td>' + (n.who || '—') + '</td>' +
+      '<td class="r num' + (n.over ? ' late-n' : '') + '">' + n.over + '</td>' +
+      '<td class="mono" style="font-size:11px;color:var(--faint)">' + o.date + '</td></tr>';
+    if (!o.sub || !open) return head;
+    return head + o.sub.map(function(b, j){
+      var bcur = cur && state.block === b.block;
+      return '<tr class="obj-sub-row" data-obj="' + i + '" data-sub="' + j + '"' +
+        (bcur ? ' aria-current="true"' : '') + '>' +
+        '<td>' + b.name + '</td><td></td>' +
+        '<td>' + (bcur ? '<span class="stage-pill now">открыт</span>' : 'блок объекта') + '</td>' +
+        '<td></td><td class="r num">' + f2(b.s) + '</td>' +
+        '<td class="r num">' + mln(b.cost) + '</td>' +
+        '<td class="r num">' + mln(b.price) + '</td>' +
+        '<td class="r num">' + f2(b.profit * 100) + ' %</td>' +
+        '<td colspan="3"></td>' +
+        '<td class="mono" style="font-size:11px;color:var(--faint)">' + b.date + '</td></tr>';
+    }).join('');
   }).join('');
-  var tot = OBJECTS.reduce(function(a,o){
-    return a + (o.st === 'Проигран' ? 0 : (o.price||0));
-  }, 0);
-  return '<div class="list-head"><div><h1 class="stage-title">Объекты</h1>'+
-    '<p class="stage-sub">Все расчёты отдела в одном месте. Открытый объект отмечен слева; '+
-    'по каждому хранятся ОЗМ, прайсы, полученные КП и зафиксированный тендерный бюджет.</p></div>'+
+
+  /* сводка сверху считается по объектам в работе */
+  var work = [], byStep = {}, top = null, days = 0, dn = 0, late = 0;
+  OBJECTS.forEach(function(o, i){
+    if (!IN_WORK[o.st]) return;
+    var n = info[i];
+    work.push(o);
+    if (n.over) late++;
+    if (n.days != null){ days += n.days; dn++; }
+    if (n.step){
+      byStep[n.step] = (byStep[n.step] || 0) + 1;
+      if (!top || byStep[n.step] > byStep[top]) top = n.step;
+    }
+  });
+  var topName = '';
+  OBJECTS.forEach(function(o, i){ if (info[i].step === top && !topName) topName = info[i].stepName; });
+  var avg = dn ? (days / dn) : 0;
+
+  return '<div class="list-head"><div><h1 class="stage-title">Объекты</h1>' +
+    '<p class="stage-sub">Все расчёты отдела в одном месте. Видно, где какой завис: шаг, дни в расчёте, ' +
+    'кто держит и сколько строк «Что мешает» вышло за норматив. Открытый объект отмечен слева.</p></div>' +
     '<div class="stage-actions"><button class="btn btn-primary">Новый расчёт</button></div></div>' +
-  cells([['Объектов в работе','7','из них 3 в тендере'],
-         ['Площадь конструкций', nf0.format(23406)+' м²','по всем объектам'],
-         ['Сумма контрактов', mln(tot)+' ₽','без проигранных']]) +
-  panel('Расчёты','показаны 7 из 7',
-    '<div class="tw"><table><thead><tr><th>Объект</th><th>Заказчик</th><th>Стадия</th>'+
-    '<th class="r">Площадь, м²</th><th class="r">Себестоимость</th><th class="r">Цена контракта</th>'+
-    '<th class="r">Прибыль</th><th>Расчётчик</th><th>Расчёт от</th></tr></thead>'+
-    '<tbody>'+rows+'</tbody></table></div>', true) +
-  panel('Про эти цифры','',
-    '<div class="note">Строка <b>Догма Юкки · Встройка</b> посчитана по настоящему файлу расчёта, '+
-    'её числа сходятся с ним до рубля. Строка <b>Навеска</b> условная: площадь 1 073 м² из документа 16, '+
-    'удельные цены взяты как у встройки, выгрузки от Андрея пока нет. Строка <b>Универ сити</b> посчитана по файлу '+
-    '150626ВХ (лист ДИР, колонка D «моя версия по рабочему ОЗМ») и открывается сразу на тендерном бюджете: '+
-    'там правятся цены оферты. Остальные строки это примеры.</div>');
+  cells([['Объектов в работе', String(work.length), 'всего в реестре ' + OBJECTS.length],
+         ['Из них с просрочкой', String(late), late ? 'строки «Что мешает» сверх норматива' : 'все в срок'],
+         ['Средний срок расчёта', dn ? f2(avg) + ' дн' : '—', 'по объектам в работе, от даты начала до ' + TODAY],
+         ['Больше всего объектов стоит', top ? 'на шаге ' + top : '—', topName || '']]) +
+  panel('Расчёты', 'показано ' + OBJECTS.length + ' из ' + OBJECTS.length,
+    '<div class="tw"><table><thead><tr><th>Объект</th><th>Заказчик</th><th>Стадия</th><th>Где стоит</th>' +
+    '<th class="r">Площадь, м²</th><th class="r">Себестоимость</th><th class="r">Цена контракта</th>' +
+    '<th class="r">Прибыль</th><th class="r">В расчёте, дней</th><th>Кто держит</th>' +
+    '<th class="r">Просрочек</th><th>Расчёт от</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody></table></div>', true) +
+  panel('Про эти цифры', '',
+    '<div class="note">Строка <b>Догма Юкки</b> это один объект: договор один и ДИР общий, ' +
+    'встройка и навеска раскрываются стрелкой как блоки. Встройка посчитана по настоящему файлу расчёта ' +
+    'и сходится с ним до рубля; навеска условная: площадь 1 073 м² из документа 16, удельные цены взяты ' +
+    'как у встройки, выгрузки от Андрея пока нет, <b>В8</b>. Строка <b>Универ сити</b> посчитана по файлу ' +
+    '150626ВХ (лист ДИР, колонка D «моя версия по рабочему ОЗМ») и открывается сразу на тендерном бюджете: ' +
+    'там правятся цены оферты.</div>' +
+    '<div class="note">У Догмы и Универа колонки «Где стоит», «В расчёте», «Кто держит» и «Просрочек» ' +
+    'считаются из их собственных данных тем же кодом, что блок «Что мешает» внутри объекта. ' +
+    'У остальных четырёх строк эти значения <b>примерные</b>, они помечены в колонке «Где стоит».</div>') +
+  panel('Нормативы', 'С2, вопрос В3',
+    '<div class="tw"><table><thead><tr><th>Этап</th><th class="r">Норматив</th><th>Источник</th></tr></thead><tbody>' +
+    Object.keys(NORMS).map(function(k){
+      var nm = NORMS[k];
+      return '<tr><td>' + nm.n + '</td><td class="r num' + (nm.draft ? ' draft-norm' : '') + '">' +
+        nm.h + ' ч' + (nm.draft ? ' *' : '') + '</td>' +
+        '<td' + (nm.draft ? ' class="draft-norm"' : '') + '>' + nm.src + '</td></tr>';
+    }).join('') + '</tbody></table></div>' +
+    '<div class="note">Подтверждены Павлом 07.09 два норматива: расчёт объекта ' + NORMS.calc.h + ' часов и ' +
+    'подтверждение цен поставщиков ' + NORMS.supply.h + ' часа. Остальные <span class="draft-norm">охрой</span> ' +
+    'черновые, ждём Павла: <b>вопрос В3</b>.</div>', true);
 }
 
 /* ==================================================================
@@ -3902,6 +4210,7 @@ function renderLenta(){
     '<button class="btn btn-sm" data-fold-all>Свернуть все</button>'+
     '<button class="btn btn-sm" data-fold-attn>Развернуть требующие внимания</button>'+
     '<span class="hint">Все восемь разделов подряд. Трекер и итог справа не двигаются.</span></div>';
+  out += blockersPanel();
   for (n = 1; n <= LAST_STEP; n++) out += lentaSection(n, ST[n-1]);
   document.getElementById('stage').innerHTML = out;
   observeSections();
@@ -4027,7 +4336,7 @@ function renderStage(){
     stageRestore(sn);
     return;
   }
-  el.innerHTML = views[state.step]();
+  el.innerHTML = blockersPanel() + views[state.step]();
 }
 
 function row(k, v, cls){
@@ -4189,11 +4498,19 @@ document.getElementById('stage').addEventListener('click', function(e){
     var s = SCENARIOS[+t.dataset.scn];
     FIN.avans = s.a; O.schedule.customerPayLag = s.d; renderAll(); return;
   }
+  if (state.mode === 'list' && (t = e.target.closest('[data-list-open]'))){
+    var li = +t.dataset.listOpen;
+    listOpen[li] = !listOpen[li];
+    renderStage(); return;
+  }
   if (state.mode === 'list' && (t = e.target.closest('[data-obj]'))){
     var o = OBJECTS[+t.dataset.obj];
     if (o.obj){
       loadObject(o.obj);
-      if (o.block) state.block = o.block;
+      /* по строке объекта открываем «Оба блока», по подстроке — выбранный блок */
+      var sb = (t.dataset.sub != null && o.sub) ? o.sub[+t.dataset.sub] : null;
+      if (sb) state.block = sb.block;
+      else if (o.sub) state.block = O.block0;
       goStep(state.step);
     } else goStep(state.step);
     return;
@@ -4396,6 +4713,9 @@ document.getElementById('contract').addEventListener('input', function(e){
 document.getElementById('contract').addEventListener('blur', renderSummary);
 
 /* «подробно» в итоге ленты переживает перерисовку */
+document.getElementById('stage').addEventListener('toggle', function(e){
+  if (e.target && e.target.id === 'blk') state.blkOpen = e.target.open;
+}, true);
 document.getElementById('res').addEventListener('toggle', function(e){
   if (e.target && e.target.classList.contains('sum-more')) state.sumMore = e.target.open;
 }, true);
