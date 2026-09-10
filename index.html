@@ -474,7 +474,7 @@ var VAT_IN_VSTR, GEN_VSTR, ADM_VSTR;   // НДС к вычету, генподр
 var PRJ_VSTR, MAT_VSTR, HOLD;          // проектирование и геодезия, контрольная сумма материалов, удержание
 var GEN_ANTI = 0;                      // генподрядные процентом от цены: множитель к цене (Универ сити)
 var OVH = 0.10, PROFIT_TAX = 0.25;
-var BLOCK_NAMES, AC, BUY, TEND, MAN, DELIV, MOUNT, MSTAGES, FILL_AREA, SASH_GLASS, ARTICLES, HOLES, ZAHV, FIN;
+var BLOCK_NAMES, AC, BUY, TEND, MAN, DELIV, MOUNT, FILL_AREA, SASH_GLASS, ARTICLES, HOLES, ZAHV, FIN;
 var MAT_REST = 0;    /* «прочие материалы», добивка до контрольной суммы; считается при загрузке объекта */
 
 function blocks(){ return state.block === 'all' ? O.blocks.filter(function(b){ return b !== 'all'; }) : [state.block]; }
@@ -532,15 +532,110 @@ function ipShare(r){ return r.ip != null ? r.ip / 100 : 1 - P('payroll_share'); 
 function mountTotal(){ return MOUNT.reduce(function(a,r){ return a + mountRowSum(r); }, 0); }
 function mountIp(){ return MOUNT.reduce(function(a,r){ return a + mountRowSum(r) * ipShare(r); }, 0); }
 function mountZp(){ return mountTotal() - mountIp(); }
-/* суммы этапов: последний забирает остаток, чтобы сумма этапов совпала со строкой */
-function stageSums(total){
-  var out = [], acc = 0;
-  MSTAGES.forEach(function(s, i){
-    var v = i === MSTAGES.length - 1 ? total - acc : total * s[1] / 100;
+/* ---- этапы монтажа ------------------------------------------------
+   Шесть слов, по которым ДИР собирает зарплату монтажа (документ
+   «Механика шаблона бюджета», раздел 6) и по которым закрываются
+   процентовки с заказчиком и с монтажниками (документ 10, раздел 3.4). */
+var STAGE_DEF = [
+  {k:'frame',  n:'Каркас'},
+  {k:'fill',   n:'Заполнения'},
+  {k:'adjOut', n:'Примыкания наружные'},
+  {k:'adjIn',  n:'Примыкания внутренние'},
+  {k:'sash',   n:'Створки'},
+  {k:'scs',    n:'Сдача СКС'}
+];
+/* Шесть наборов процентовки из справочника монтажа ПРАЙС_СМР, колонка G
+   под заголовком блока конструкции. Каждый набор даёт 100 %.
+   У ВС-36 ставка этапа округляется до 0,1 вверх или вниз
+   (ПРАЙС_СМР!K57:K61, K63:K67), сами доли целые. */
+var MOUNT_REF = {
+  fs50:  {n:'Конструкции ФС-50',            src:'ПРАЙС_СМР!G11:G16',
+          p:{frame:25, fill:25, adjOut:10, adjIn:20, sash:15, scs:5}},
+  a77:   {n:'Окна А77, двери АD77, HS180',  src:'ПРАЙС_СМР!G39:G43',
+          p:{frame:30, fill:25, adjOut:20, adjIn:20, sash:0,  scs:5}},
+  vs36n: {n:'ВС-36 навесные',               src:'ПРАЙС_СМР!G57:G61', round:'0,1',
+          p:{frame:30, fill:24, adjOut:12, adjIn:22, sash:12, scs:0}},
+  vs36v: {n:'ВС-36 встроенные',             src:'ПРАЙС_СМР!G63:G67', round:'0,1',
+          p:{frame:30, fill:22, adjOut:15, adjIn:22, sash:11, scs:0}},
+  vs36p: {n:'ВС-36 перегородки',            src:'ПРАЙС_СМР!G81:G83',
+          p:{frame:33, fill:23, adjOut:0,  adjIn:44, sash:0,  scs:0}},
+  bs44:  {n:'БС-44',                        src:'ПРАЙС_СМР!G85:G87',
+          note:'«направляющие» показаны как каркас',
+          p:{frame:40, fill:0,  adjOut:0,  adjIn:0,  sash:55, scs:5}}
+};
+/* набор строки: правка на объекте важнее справочника */
+function stageSetOf(r){
+  if (r.pStages) return r.pStages;
+  return (MOUNT_REF[r.stg] || MOUNT_REF.vs36v).p;
+}
+function stageSrcOf(r){
+  if (r.pStages) return r.pStagesSrc || 'правка на объекте';
+  return (MOUNT_REF[r.stg] || MOUNT_REF.vs36v).src;
+}
+/* ненулевые этапы строки */
+function stagesOf(r){
+  var p = stageSetOf(r), out = [];
+  STAGE_DEF.forEach(function(s){ if (p[s.k]) out.push({k:s.k, n:s.n, pct:p[s.k]}); });
+  return out;
+}
+/* суммы этапов строки: последний забирает остаток, чтобы сумма этапов совпала со строкой */
+function stageSums(r, total){
+  var st = stagesOf(r), out = [], acc = 0;
+  st.forEach(function(s, i){
+    var v = i === st.length - 1 ? total - acc : total * s.pct / 100;
     acc += v; out.push(v);
   });
   return out;
 }
+/* бригадные строки монтажа: по ним идут процентовки и начисления монтажникам */
+function crewRows(){ return MOUNT.filter(function(r){ return r.crew; }); }
+function crewTotal(){ return crewRows().reduce(function(a,r){ return a + mountRowSum(r); }, 0); }
+/* доли этапов по объекту: взвешены по суммам монтажа бригадных строк */
+function mountStageWeights(){
+  var tot = 0, acc = {};
+  STAGE_DEF.forEach(function(s){ acc[s.k] = 0; });
+  crewRows().forEach(function(r){
+    var sum = mountRowSum(r), p = stageSetOf(r);
+    tot += sum;
+    STAGE_DEF.forEach(function(s){ acc[s.k] += sum * (p[s.k] || 0) / 100; });
+  });
+  return STAGE_DEF.map(function(s){
+    return {k:s.k, n:s.n, pct:(tot ? acc[s.k] / tot * 100 : 0), sum:acc[s.k]};
+  });
+}
+
+/* ---- удержание: условия договора, а не одно поле -------------------
+   Дефолты по заказчику. У Сэтла две строки из условий договора 150626ВХ,
+   у остальных одна: 5 % на год после сдачи последней КС
+   (Павел 02.09, документ 10, раздел 3.6).
+   TODO Р1: деление на возвратную и невозвратную часть связано с HOLD
+   объекта временно, до ответа на Р1. */
+var CUSTOMERS = {
+  'СЭТЛ СТРОЙ':{hold:[
+    {pct:9, base:'smr',   release:'after_handover', inDir:false, src:'условия договора 150626ВХ'},
+    {pct:1, base:'total', release:'after_warranty', inDir:true,
+     src:'ДИР!E172 = 1 %, база — цена контракта: ДИР!D172 = 395 046,23'}
+  ]},
+  'default':{hold:[
+    {pct:5, base:'total', release:'after_warranty', inDir:true,
+     src:'Павел 02.09, документ 10, раздел 3.6: 5 % на год после сдачи последней КС'}
+  ]}
+};
+var HOLD_BASE = {smr:'СМР-часть контракта', total:'вся цена контракта', materials:'материалы контракта'};
+var HOLD_REL  = {after_ks:'сразу после КС', after_handover:'после сдачи объекта',
+                 after_warranty:'после гарантии', never:'не возвращается'};
+function holdTerms(){
+  if (!O.holdTerms)
+    O.holdTerms = (CUSTOMERS[O.form.customer] || CUSTOMERS['default']).hold.map(function(h){
+      return {pct:h.pct, base:h.base, release:h.release, inDir:h.inDir, src:h.src, note:''};
+    });
+  return O.holdTerms;
+}
+function holdIrrevocablePct(){
+  return holdTerms().reduce(function(a,h){ return a + (h.inDir ? h.pct : 0); }, 0);
+}
+/* сроки объекта: месяцы монтажа, гарантия, задержка выплат бригаде */
+function sched(){ return O.schedule; }
 
 /* ---- шаг 6: статьи затрат ---------------------------------------- */
 var AUTO = {
@@ -655,7 +750,9 @@ var state = {
   funds: 0,
   country: 'Россия',
   form: {},
-  open: {}          // раскрытые строки этапов монтажа
+  open: {},         // раскрытые строки этапов монтажа
+  tree: {},         // раскрытые разделы и статьи финплана
+  cmp: {}           // раскрытые разделы сравнения версий
 };
 
 /* ==================================================================
@@ -763,14 +860,15 @@ OBJ.dogma = {
   {n:'Упаковка, ящики',        q:64,     u:'ящик', rate:10000, src:'1 ящик на 50 м²'}
 ],
   MOUNT:[
-  {k:'m1', n:'Витражи ВС-36, встроенные', vol:2220.9, rate:2100},
-  {k:'m2', n:'Оконный блок A77',          vol:546.0,  rate:2600},
-  {k:'m3', n:'Дверной блок AD77',         vol:62.0,   rate:3100},
-  {k:'m4', n:'Вентрешётка',               vol:228.0,  rate:1100},
-  {k:'m5', n:'Ограждение',                vol:1030.0, rate:1800},
-  {k:'m6', n:'Защита конструкций и сдача СКС', lump:1079266.21, u:'на объект', bal:1}
+  {k:'m1', n:'Витражи ВС-36, встроенные', vol:2220.9, rate:2100, crew:1, stg:'vs36v'},
+  {k:'m2', n:'Оконный блок A77',          vol:546.0,  rate:2600, crew:1, stg:'a77'},
+  {k:'m3', n:'Дверной блок AD77',         vol:62.0,   rate:3100, crew:1, stg:'a77'},
+  {k:'m4', n:'Вентрешётка',               vol:228.0,  rate:1100, crew:1, stg:'vs36v'},
+  {k:'m5', n:'Ограждение',                vol:1030.0, rate:1800, crew:1, stg:'vs36v'},
+  {k:'m6', n:'Защита конструкций и сдача СКС', lump:1079266.21, u:'на объект', bal:1, scs:1}
 ],
-  stages:[['Каркас',30],['Заполнения',22],['Примыкания',15],['Створки',22],['Сдача СКС',11]],
+  /* сроки объекта: в файле их нет, поставлены условно (документ 21, Р7) */
+  schedule:{mountStart:2, mountMonths:7, warrantyMonths:12, crewPayLag:1, cond:1},
   ARTICLES:[
   {k:'gar', n:'Гарантийное обслуживание', req:'mandatory', on:true, dir:OTH,
    rec:318088.91, acc:318088.91, src:'100 ₽/м², ПРАЙС_СМР_прочее', note:'обязательна на всех объектах'},
@@ -978,14 +1076,17 @@ OBJ.univer = {
   ],
   /* шаг 5: монтаж, свод ДИР!D133:D139. crew — бригадная ставка, scs — сдача СКС (входит в базу 57,6 %) */
   MOUNT:[
-    {k:'m1', n:'Витражи ВС-36 навесные, наружу', vol:2776.5, rate:1300, ip:50, crew:1},
+    {k:'m1', n:'Витражи ВС-36 навесные, наружу', vol:2776.5, rate:1300, ip:50, crew:1, stg:'vs36n',
+     /* на объекте процентовка переставлена руками: БЮДЖЕТ!G546:G550 */
+     pStages:{frame:36, fill:30, adjOut:0, adjIn:22, sash:12, scs:0}, pStagesSrc:'БЮДЖЕТ!G546:G550, правка на объекте'},
     {k:'m2', n:'Сдача СКС дольщикам, М1 Сэтл',   vol:2853.13, rate:500, ip:0, scs:1, vat:1},
     {k:'m3', n:'Услуги клининговой компании',    vol:2853.13, rate:160, ip:0},
     {k:'m4', n:'Производственный инструмент',    vol:2853.13, rate:20,  ip:0},
     {k:'m5', n:'Расходы на проживание: бытовки 3 шт × 3 мес × 7 000', lump:63000, u:'на объект', ip:0},
     {k:'m6', n:'Расходы на получение средств: 57,6 % на ЗП и сдачу СКС, 8 % на ИП', auto:'funds', u:'считается', ip:0, vat:1}
   ],
-  stages:[['Каркас',36],['Заполнения',30],['Примыкания',22],['Створки',12]],
+  /* сроки объекта: в файле их нет (ДИР!D10 пусто), поставлены условно */
+  schedule:{mountStart:2, mountMonths:6, warrantyMonths:12, crewPayLag:1, cond:1},
   /* шаг 6: статьи, свод ДИР!D143:D161 */
   ARTICLES:[
     {k:'genp', n:'Генподрядные, 1,5 % от цены контракта', req:'mandatory', on:true, dir:OTH, auto:'genpct', vat:1,
@@ -1080,6 +1181,55 @@ OBJ.univer = {
       {k:'o6', n:'Зашивка несущего каркаса СМЛ со стороны балконов',          u:'м²',     q:526.92,  mat:2811.58, smr:345.50}
     ]
   },
+  /* Две версии объекта. Колонка G листа ДИР — первоначальный бюджет,
+     колонка D — наша версия по рабочему ОЗМ. Проверено по файлу: обе
+     колонки заполнены на уровне статей ДИР и заголовков блоков;
+     строки товарных групп («ТГ Профиль», «ТГ Аксессуары» и так далее)
+     пусты в обеих колонках, поэтому уровня позиций в сравнении нет.
+     working сейчас собирается из живых таблиц шагов, initial — только
+     числа колонки G; загрузка рабочего ОЗМ в объект это следующий заход. */
+  versions:{
+    initial:{name:'Первоначальный бюджет', src:'ДИР, колонка G', level:'статьи ДИР'},
+    working:{name:'Наша версия по рабочему ОЗМ', src:'ДИР, колонка D', level:'статьи ДИР'}
+  },
+  /* дерево сравнения: [уровень, имя, initial (G), working (D), адрес] */
+  compareTree:[
+    [0,'Материалы',                        19623807.69, 14575062.2625, 'ДИР!17'],
+    [1,'Витражи (ВХ; ВТ) - ЦЕХ',           12354643.32,  8392775.3025, 'ДИР!18'],
+    [2,'Каркас',                            7503017.59,  4191680.4625, 'ДИР!19'],
+    [2,'Штапик',                            1367363.10,  1238489.04,   'ДИР!26'],
+    [2,'Оконный блок',                      2291311.84,  1468744.94,   'ДИР!31'],
+    [2,'Вентрешётка',                        345245.47,   294843.54,   'ДИР!46'],
+    [2,'Ограждение',                         847705.32,  1199017.32,   'ДИР!49'],
+    [1,'Витражи (ВХ; ВТ) - МОНТАЖ',         7269164.37,  6182286.96,   'ДИР!52'],
+    [2,'Заполнение',                        3347840.49,  3193182.00,   'ДИР!53'],
+    [2,'Примыкания',                        2237573.02,  1645914.23,   'ДИР!58'],
+    [2,'Монтажные материалы',               1398437.86,  1172002.93,   'ДИР!64'],
+    [2,'Расходные материалы',                285313.00,   171187.80,   'ДИР!69'],
+    [0,'Изготовление',                      3223992.80,  3202891.40,   'ДИР!128'],
+    [0,'Проектирование и Геодезия',          917152.69,   731890.00,   'ДИР!129'],
+    [1,'Проектирование',                     667489.77,   485887.50,   'ДИР!130'],
+    [1,'Геодезия',                           239662.92,   236002.50,   'ДИР!131'],
+    [1,'Док. обеспечение строительства ППР',  10000.00,    10000.00,   'ДИР!132'],
+    [0,'Монтаж',                            7342487.61,  7673533.02,   'ДИР!133'],
+    [1,'Зарплата',                          3709069.01,  3609450.00,   'ДИР!134'],
+    [1,'Аутсорсинг',                        1854534.50,  2060954.62,   'ДИР!135'],
+    [1,'Расходы на проживание',              152600.00,    63000.00,   'ДИР!136'],
+    [1,'Сдача СКС, дольщикам',               998595.50,  1426565.00,   'ДИР!137'],
+    [1,'Производственный инструмент',         57062.60,    57062.60,   'ДИР!138'],
+    [1,'Услуги клининговой компании',        570626.00,   456500.80,   'ДИР!139'],
+    [0,'Прочие расходы',                    1580948.17,  1305432.32,   'ДИР!143'],
+    [1,'Генподрядные',                       592572.17,   592572.17,   'ДИР!144'],
+    [1,'Генподрядные (возмещение)',          142656.50,   138825.00,   'ДИР!145'],
+    [1,'Охрана труда и техника безопасности', 85593.90,    85593.90,   'ДИР!147'],
+    [1,'Аренда строительной техники',        244000.00,    48800.00,   'ДИР!149'],
+    [1,'Вывоз мусора и промышл. отходов',     90000.00,    72000.00,   'ДИР!151'],
+    [1,'Туалетные кабинки',                   13750.00,    11000.00,   'ДИР!152'],
+    [1,'Администрирование объекта',           70000.00,        0.00,   'ДИР!155'],
+    [1,'Гарантийное обслуживание',           285313.00,   356641.25,   'ДИР!159'],
+    [1,'Спецодежда',                          57062.60,        0.00,   'ДИР!161']
+  ],
+  compareTotal:['ИТОГО РАСХОДЫ', 32688388.96, 27488809.00, 'ДИР!162'],
   /* сравнение с первоначальным бюджетом: ДИР колонка G против колонки D */
   compare:{
     title:'Первоначальный бюджет против нашей версии', src:'ДИР, колонки G и D',
@@ -1109,7 +1259,7 @@ function saveObjectState(){
   Object.keys(PARAMS).forEach(function(k){ pv[k] = PARAMS[k].value; });
   O.saved = {step:state.step, m:state.m, block:state.block, target:state.target, metiz:state.metiz,
              dirForm:state.dirForm, marketing:state.marketing, funds:state.funds, open:state.open,
-             params:pv, paramEdited:paramEdited};
+             tree:state.tree, cmp:state.cmp, params:pv, paramEdited:paramEdited};
 }
 function loadObject(id){
   if (O && O.id === id) return;
@@ -1118,7 +1268,7 @@ function loadObject(id){
   S_VSTR = O.S; S_NAV = O.S2 || 0; NAV_K = S_NAV / S_VSTR;
   VAT_IN_VSTR = O.vatIn; GEN_VSTR = O.gen; ADM_VSTR = O.adm; PRJ_VSTR = O.prj; MAT_VSTR = O.mat; HOLD = O.hold;
   BLOCK_NAMES = O.blockNames;
-  AC = O.AC; BUY = O.BUY; TEND = O.TEND; MAN = O.MAN; DELIV = O.DELIV; MOUNT = O.MOUNT; MSTAGES = O.stages;
+  AC = O.AC; BUY = O.BUY; TEND = O.TEND; MAN = O.MAN; DELIV = O.DELIV; MOUNT = O.MOUNT;
   FILL_AREA = O.fillArea; SASH_GLASS = O.sashGlass; ARTICLES = O.ARTICLES; HOLES = O.HOLES; ZAHV = O.ZAHV; FIN = O.fin;
   PARAM_UNUSED = O.paramUnused || {};
   var sv = O.saved;
@@ -1137,6 +1287,8 @@ function loadObject(id){
   state.marketing = sv ? sv.marketing : 0;
   state.funds = sv ? sv.funds : 0;
   state.open = sv ? sv.open : {};
+  state.tree = sv ? sv.tree : {};
+  state.cmp  = sv ? sv.cmp  : {};
   MAT_REST = 0;
   MAT_REST = MAT_VSTR - (priceTotal() + buyTotal() + tendTotal());
   if (Math.abs(MAT_REST) < 0.5) MAT_REST = 0;
@@ -1700,9 +1852,9 @@ views_5 = function(){
         '<td class="r num">'+f(sum)+'</td>'+
         '<td>'+(r.bal ? bal() : (r.auto ? '<span class="pill p-auto">считается</span>' : pill(r.ipHand || r.hand ? 'manual' : 'auto')))+'</td></tr>';
       if (isOpen){
-        var ss = stageSums(sum);
-        rows += MSTAGES.map(function(s, i){
-          return '<tr class="sub"><td>'+s[0]+'</td><td class="r num">'+s[1]+' %</td>'+
+        var ss = stageSums(r, sum), st = stagesOf(r);
+        rows += st.map(function(s, i){
+          return '<tr class="sub"><td>'+s.n+'</td><td class="r num">'+s.pct+' %</td>'+
             '<td colspan="4"></td><td class="r num">'+f2(ss[i])+'</td><td></td></tr>';
         }).join('');
         rows += '<tr class="sub"><td>Сумма этапов</td><td colspan="5"></td>'+
@@ -1711,8 +1863,10 @@ views_5 = function(){
     });
   });
 
-  var bar = '<div class="stagebar">'+MSTAGES.map(function(s,i){
-    return '<span style="flex:'+s[1]+';background:var(--ramp-'+(i+1)+')">'+s[1]+' %</span>';
+  var W = mountStageWeights().filter(function(s){ return s.pct > 0.0005; });
+  var bar = '<div class="stagebar">'+W.map(function(s,i){
+    return '<span style="flex:'+s.pct+';background:var(--ramp-'+((i%5)+1)+')" title="'+s.n+'">'+
+      pcs(s.pct)+'</span>';
   }).join('')+'</div>';
 
   return head('Монтаж',
