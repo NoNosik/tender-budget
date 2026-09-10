@@ -1847,8 +1847,13 @@ views_5 = function(){
       var sum = mountRowSum(r) * bk;
       var ip = ipShare(r), ipSum = sum * ip, zpSum = sum - ipSum;
       var key = b + '-' + r.k, isOpen = !!state.open[key];
-      rows += '<tr><td><button class="expander" data-open="'+key+'" aria-expanded="'+isOpen+'" '+
-          'aria-label="Этапы работ">'+(isOpen ? '▾' : '▸')+'</button>'+(r.bal ? balName(r.n) : r.n)+'</td>'+
+      /* этапы раскрываются только у бригадных строк: сдача СКС, клининг, бытовки
+         и расходы на получение средств процентовкой по этапам не закрываются */
+      rows += '<tr><td>'+(r.crew
+          ? '<button class="expander" data-open="'+key+'" aria-expanded="'+isOpen+'" '+
+            'aria-label="Этапы работ">'+(isOpen ? '▾' : '▸')+'</button>'
+          : '<span class="expander" style="cursor:default">·</span>')+
+        (r.bal ? balName(r.n) : r.n)+'</td>'+
         '<td class="r num">'+(r.vol == null ? '<span style="color:var(--faint)">'+r.u+'</span>' : f2(r.vol*bk))+'</td>'+
         '<td class="r">'+(r.vol == null ? '—'
           : (b === 'vstr'
@@ -1862,7 +1867,7 @@ views_5 = function(){
         '<td class="r num">'+f(ipSum)+'</td>'+
         '<td class="r num">'+f(sum)+'</td>'+
         '<td>'+(r.bal ? bal() : (r.auto ? '<span class="pill p-auto">считается</span>' : pill(r.ipHand || r.hand ? 'manual' : 'auto')))+'</td></tr>';
-      if (isOpen){
+      if (isOpen && r.crew){
         var ss = stageSums(r, sum), st = stagesOf(r);
         rows += st.map(function(s, i){
           return '<tr class="sub"><td>'+s.n+'</td><td class="r num">'+s.pct+' %</td>'+
