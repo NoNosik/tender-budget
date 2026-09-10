@@ -897,8 +897,11 @@ OBJ.dogma = {
      заказчик платит через месяц после КС (ДДС!G14 = ДИР!F14), бригаде деньги
      уходят через два месяца после начисления (ДДС!I134 = ДИР!G134). */
   schedule:{mountStart:2, mountMonths:6, warrantyMonths:12,
-            customerPayLag:1, crewPayLag:2, scsMonths:4,
+            customerPayLag:1, crewPayLag:1, scsMonths:4,
             finalKsShare:0, finalKsLag:0, lead:2, tail:2, cond:1},
+  ksStagesSrc:'договор 150626ВХ, п. 2.1.25–2.1.31, секция 4; остальные секции считаем такими же, уточняется',
+  /* договора на Догму нет, берём разбивку Сэтла как дефолт справочника */
+  ksStagesSrc:'по договору Сэтла, п. 2.1.25–2.1.31; для Догмы условно, своего договора нет',
   ARTICLES:[
   {k:'gar', n:'Гарантийное обслуживание', req:'mandatory', on:true, dir:OTH,
    rec:318088.91, acc:318088.91, src:'100 ₽/м², ПРАЙС_СМР_прочее', note:'обязательна на всех объектах'},
@@ -1121,7 +1124,7 @@ OBJ.univer = {
   contractType:'витражи',   /* витражный договор Сэтла: удержание 6 + 1 */
   /* сроки и лаги объекта, лаги из ДДС Сената (документ 24, раздел 3) */
   schedule:{mountStart:2, mountMonths:6, warrantyMonths:12,
-            customerPayLag:1, crewPayLag:2, scsMonths:4,
+            customerPayLag:1, crewPayLag:1, scsMonths:4,
             finalKsShare:0, finalKsLag:0, lead:2, tail:2, cond:1},
   /* шаг 6: статьи, свод ДИР!D143:D161 */
   ARTICLES:[
@@ -2673,16 +2676,39 @@ function smrShare(){
 function smrExact(){ return !!O.offer; }
 /* автоматическое выполнение: этапы идут друг за другом по месяцам монтажа,
    значения нарастающим итогом, последний месяц окна даёт 100 % */
+/* ---- виды работ по договору -----------------------------------------
+   Процентовка с заказчиком идёт не по внутренним этапам прайса СМР, а по
+   видам работ из договора: там у каждой секции своя разбивка, и она задаёт,
+   какой процент цены секции заказчик принимает по КС-2 за каждый вид работ
+   (Никита 10.09). Внутренние доли Андрея из ПРАЙС_СМР остаются в модели и
+   раскрываются на шаге монтажа, но в финплане не участвуют. */
+var KS_STAGES_DEFAULT = [
+  {k:'base', n:'Подготовка основания, геодезия, дефектовка, доработка проёмов; поставка и монтаж каркасов с полным раскреплением', pct:45, off:0},
+  {k:'glaz', n:'Глухое остекление: стекло, СМЛ, ФЦП',                        pct:25, off:1},
+  {k:'seam', n:'Формирование внутреннего монтажного шва и внутренние примыкания', pct:10, off:2},
+  {k:'sash', n:'Монтаж створок и фурнитуры, регулировка',                    pct:15, off:2},
+  {k:'docs', n:'Передача исполнительной документации',                       pct:2,  off:'last'},
+  {k:'accp', n:'Приёмка СКС',                                                pct:3,  off:'last'}
+];
+var KS_STAGES_SRC = 'договор Сэтла, п. 2.1.25–2.1.31, секция 4; остальные секции считаем такими же, уточняется';
+function ksStages(){
+  if (!O.ksStages)
+    O.ksStages = KS_STAGES_DEFAULT.map(function(x){
+      return {k:x.k, n:x.n, pct:x.pct, off:x.off, src:O.ksStagesSrc || KS_STAGES_SRC};
+    });
+  return O.ksStages;
+}
+function ksStagesSum(){ return ksStages().reduce(function(a, x){ return a + x.pct; }, 0); }
+/* автомат: виды работ идут друг за другом по месяцам монтажа, документация
+   и приёмка СКС закрываются последним месяцем; значения нарастающим итогом */
 function ksAuto(){
-  var W = mountStageWeights().filter(function(s){ return s.pct > 0.0005; });
   var w = mountWindow(), n = nMonths(), out = {};
-  W.forEach(function(s, j){
+  ksStages().forEach(function(s){
     var arr = [], i;
-    if (s.k === 'scs'){
-      for (i = 0; i < n; i++) arr.push(i >= w.handover ? 100 : 0);
+    if (s.off === 'last'){
+      for (i = 0; i < n; i++) arr.push(i >= w.b ? 100 : 0);
     } else {
-      var off = Math.floor(j * Math.max(0, w.b - w.a) / Math.max(1, W.length));
-      var st = Math.min(w.b, w.a + off);
+      var st = Math.min(w.b, w.a + (s.off || 0));
       for (i = 0; i < n; i++){
         if (i < st) arr.push(0);
         else if (i >= w.b) arr.push(100);
@@ -2698,25 +2724,27 @@ function ksState(){
   return state.ks;
 }
 function ksReset(){ state.ks = {done:ksAuto(), edited:{}, pay:{}}; }
-/* прирост выполнения этапа за месяц, в долях */
+/* прирост выполнения вида работ за месяц, в долях */
 function ksDelta(k, i){
   var a = ksState().done[k] || [];
   var prev = i ? (a[i - 1] || 0) : 0;
   return ((a[i] || 0) - prev) / 100;
 }
-/* начисление бригаде помесячно и по этапам */
+/* доля КС месяца в цене контракта, в долях */
+function ksMonthShare(){
+  var n = nMonths(), out = [], i, tot = ksStagesSum();
+  for (i = 0; i < n; i++){
+    var v = 0;
+    ksStages().forEach(function(s){ v += ksDelta(s.k, i) * s.pct; });
+    out.push(tot ? v / tot : 0);
+  }
+  return out;
+}
+/* Начисление бригаде пропорционально КС месяца, без внутренних этапов:
+   ДИР!G134 = D134 × G11, доля КС того же месяца (Никита 10.09). */
 function ksAccrual(){
-  var W = mountStageWeights().filter(function(s){ return s.pct > 0.0005; });
-  var n = nMonths(), out = [], byStage = {}, i;
-  for (i = 0; i < n; i++) out.push(0);
-  W.forEach(function(s){
-    byStage[s.k] = [];
-    for (i = 0; i < n; i++){
-      var v = ksDelta(s.k, i) * s.sum;
-      byStage[s.k].push(v); out[i] += v;
-    }
-  });
-  return {months:out, byStage:byStage, stages:W};
+  var sh = ksMonthShare(), tot = crewTotal();
+  return {months:sh.map(function(v){ return v * tot; }), share:sh};
 }
 /* доля ИП по объекту: взвешена по бригадным строкам */
 function crewIpShare(){
@@ -2742,28 +2770,20 @@ function ksPay(){
   });
   return out;
 }
-/* выручка помесячно: СМР по выполнению, материалы по месяцам поставки */
+/* Выручка помесячно: доля вида работ × прирост выполнения × цена контракта.
+   У Универа цена это итог оферты (Расценки НС9!R14), у Догмы цена контракта.
+   Деление на СМР и материалы идёт долей smrShare(): в КС-2 у каждой позиции
+   своя цена материалов и своя СМР (Расценки НС9!M и N). */
 function ksRevenue(){
   var r = calc(state.m), K = r.K, n = nMonths();
   var share = smrShare(), smrTot = K * share, matTot = K - smrTot;
-  var W = mountStageWeights().filter(function(s){ return s.pct > 0.0005; });
-  var tot = crewTotal();
-  var smr = [], mat = [], i;
-  for (i = 0; i < n; i++){ smr.push(0); mat.push(0); }
-  W.forEach(function(s){
-    var part = tot ? s.sum / tot : 0;
-    for (i = 0; i < n; i++) smr[i] += ksDelta(s.k, i) * part * smrTot;
-  });
-  /* материалы billing идёт тем же выполнением, что и СМР: в оферте у каждой
-     позиции своя цена материалов и своя СМР (Расценки НС9!M и N), и позиция
-     закрывается КС целиком, когда смонтирована. Отдельной «раскладки по
-     месяцам поставки» в ДИР нет, там одна строка КС (ДИР!14). */
-  W.forEach(function(s){
-    var part = tot ? s.sum / tot : 0;
-    for (i = 0; i < n; i++) mat[i] += ksDelta(s.k, i) * part * matTot;
-  });
-  var all = [];
-  for (i = 0; i < n; i++) all.push(smr[i] + mat[i]);
+  var sh = ksMonthShare();
+  var smr = [], mat = [], all = [], i;
+  for (i = 0; i < n; i++){
+    all.push(sh[i] * K);
+    smr.push(sh[i] * smrTot);
+    mat.push(sh[i] * matTot);
+  }
   /* финальная КС при сдаче: доля контракта уходит на finalKsLag месяцев позже
      последней рабочей КС (у Сената 7 % через полгода, ДИР!AG14).
      У Догмы и Универа доля 0, поэтому раскладка не меняется. */
@@ -2908,11 +2928,9 @@ function finTree(){
   });
 
   var sMnt = sec('mnt', 'Монтаж', 'var(--ramp-2)');
-  acc.stages.forEach(function(sg){
-    add(sMnt, 'st-' + sg.k, 'Этап: ' + sg.n, sg.sum * k, 'справочник монтажа, доля ' + pcs(sg.pct),
-        byArr(acc.byStage[sg.k], n),
-        'из выполнения по КС, оплата бригаде через ' + sc.crewPayLag + ' мес (ДИР Сената!134)', sc.crewPayLag);
-  });
+  /* одна строка на весь монтаж бригад, этапов нет: ДИР!G134 = D134 × G11 */
+  add(sMnt, 'crew', 'Монтаж, бригадные работы', crewTotal() * k, 'шаг ' + STEP.mount + ', бригадные строки',
+      sameKs, 'доля КС того же месяца, оплата бригаде через ' + sc.crewPayLag + ' мес (ДИР!134)', sc.crewPayLag);
   MOUNT.forEach(function(x, i){
     if (x.crew) return;
     var fin = x.fin || (x.scs ? 'handover' : (x.auto === 'funds' ? 'pay' : 'mount'));
@@ -3226,18 +3244,24 @@ function ksPanel(){
   var n = nMonths(), st = ksState(), acc = ksAccrual(), rev = ksRevenue();
   var mir = ksMirror(), pay = ksPay(), hf = holdFlow(), sc = sched();
   var ipSh = crewIpShare();
-  var W = acc.stages;
+  var W = ksStages(), wsum = ksStagesSum(), K = rev.K;
 
-  var srows = W.map(function(sg){
-    var tds = '';
+  var srows = W.map(function(sg, si){
+    var tds = '', sum = wsum ? K * sg.pct / wsum : 0;
     for (var i = 0; i < n; i++){
       var key = sg.k + '-' + i, ed = st.edited[key];
       tds += '<td class="r"><input type="text" class="'+(ed?'':'auto-in')+'" data-ks="'+key+
-        '" value="'+(st.done[sg.k][i])+'" aria-label="'+sg.n+', '+FIN.months[i]+', % выполнения"></td>';
+        '" value="'+(st.done[sg.k] ? st.done[sg.k][i] : 0)+'" aria-label="'+FIN.months[i]+', % выполнения"></td>';
     }
     return '<tr><td class="nm">'+sg.n+
-      '<div style="font-size:10.5px;color:var(--faint)">доля этапа '+pcs(sg.pct)+' · '+f(sg.sum)+' ₽</div></td>'+
-      tds+'<td class="r num">'+f(sg.sum)+'</td></tr>';
+      '<div class="field" style="margin-top:3px"><input type="text" class="'+(sg.edited?'':'auto-in')+
+        '" data-kspct="'+si+'" value="'+sg.pct+'" aria-label="Доля вида работ, %"><span class="sum-unit">%</span></div>'+
+      '<div style="font-size:10.5px;color:var(--faint)">'+f(sum)+' ₽ · '+sg.src+'</div>'+
+      (sg.edited
+        ? '<input type="text" class="wide" data-ksnote="'+si+'" value="'+(sg.note||'')+
+          '" placeholder="примечание к правке доли" aria-label="Примечание к доле">'
+        : '')+'</td>'+
+      tds+'<td class="r num">'+f(sum)+'</td></tr>';
   }).join('');
 
   var payTds = '';
@@ -3253,9 +3277,8 @@ function ksPanel(){
   var edited = Object.keys(st.pay).length;
 
   var wnd = mountWindow();
-  var stagesSum = W.reduce(function(a, s){ return a + s.pct; }, 0);
 
-  return panel('Выполнение по КС', 'проценты нарастающим итогом, доли этапов из справочника монтажа',
+  return panel('Выполнение по КС', 'виды работ по договору, проценты выполнения нарастающим итогом',
     '<div class="grid3" style="background:none;gap:16px;margin-bottom:14px">'+
     '<div><div class="field-lbl">Монтаж начинается с месяца</div>'+
       '<input type="text" class="'+(sc.cond?'':'auto-in')+'" data-sched="mountStart" value="'+sc.mountStart+'" aria-label="Месяц начала монтажа">'+
@@ -3269,7 +3292,8 @@ function ksPanel(){
       '<div class="field-note">от месяца сдачи</div></div>'+
     '<div><div class="field-lbl">Оплата бригаде, месяцев после начисления</div>'+
       '<input type="text" class="auto-in" data-sched="crewPayLag" value="'+sc.crewPayLag+'" aria-label="Сдвиг оплаты бригаде">'+
-      '<div class="field-note">ДДС Сената!I134 = ДИР!G134: через месяц после того, как заплатил заказчик</div></div>'+
+      '<div class="field-note">Никита 10.09: бригадам платим сразу как поступают деньги от заказчика, '+
+      'то есть в тот же месяц, что и оплата по КС</div></div>'+
     '<div><div class="field-lbl">Сдача СКС и клининг, месяцев перед финальной КС</div>'+
       '<input type="text" class="auto-in" data-sched="scsMonths" value="'+sc.scsMonths+'" aria-label="Месяцев перед финальной КС">'+
       '<div class="field-note">ДИР Сената!137, 139: четыре равные части</div></div>'+
@@ -3281,7 +3305,7 @@ function ksPanel(){
       '<div class="field-note">считается от месяца последней рабочей КС</div></div>'+
     '</div>'+
 
-    '<div class="tw months"><table><thead><tr><th>Этап</th>'+monthCols()+'<th class="r">Всего, ₽</th></tr></thead>'+
+    '<div class="tw months"><table><thead><tr><th>Вид работ по договору</th>'+monthCols()+'<th class="r">Всего, ₽</th></tr></thead>'+
     '<tbody>'+srows+
     '<tr style="border-top:1px solid var(--line-strong)"><td class="nm"><b>Выручка СМР</b>'+
       '<div style="font-size:10.5px;color:var(--faint)">'+(smrExact()
@@ -3298,7 +3322,8 @@ function ksPanel(){
     '<tr><td class="nm">Возврат удержания</td>'+numCells(hf.back, 'color:var(--p-auto)')+
       '<td class="r num">'+f(hf.backSum)+'</td></tr>'+
     '<tr style="border-top:1px solid var(--line-strong)"><td class="nm"><b>Начислено бригаде</b>'+
-      '<div style="font-size:10.5px;color:var(--faint)">тот же процент этапа от суммы монтажа шага '+STEP.mount+'</div></td>'+
+      '<div style="font-size:10.5px;color:var(--faint)">доля КС месяца от суммы бригадных строк шага '+STEP.mount+
+      ', как ДИР!G134 = D134 × G11 (Никита 10.09)</div></td>'+
       numCells(acc.months)+'<td class="r num">'+f(crewTotal())+'</td></tr>'+
     '<tr><td class="nm">в том числе зарплатный проект</td>'+
       numCells(acc.months.map(function(v){ return v * (1 - ipSh); }))+
@@ -3307,7 +3332,8 @@ function ksPanel(){
       numCells(acc.months.map(function(v){ return v * ipSh; }))+
       '<td class="r num">'+f(crewTotal()*ipSh)+'</td></tr>'+
     '<tr><td class="nm"><b>Выплаты монтажникам</b>'+
-      '<div style="font-size:10.5px;color:var(--faint)">по умолчанию зеркально КС со сдвигом '+sc.crewPayLag+' мес</div></td>'+
+      '<div style="font-size:10.5px;color:var(--faint)">в месяц, когда пришли деньги от заказчика: сдвиг '+
+      sc.crewPayLag+' мес от КС (Никита 10.09)</div></td>'+
       payTds+'<td class="r num">'+f(pay.reduce(function(a,b){ return a+b; },0))+'</td></tr>'+
     '</tbody></table></div>'+
 
@@ -3316,9 +3342,12 @@ function ksPanel(){
     '<span class="field-note">правок помесячно: '+edited+
       (edited ? ' · накопленное отклонение '+(offTotal>0?'+':'')+f(offTotal)+' ₽' : '')+'</span>'+
     '<button class="btn btn-sm" data-ks-auto>Пересчитать выполнение автоматом</button>'+
-    '<span class="field-note">сумма долей этапов '+pcs(stagesSum)+'</span>'+
+    '<span class="field-note'+(Math.abs(wsum-100)>0.001?'" style="color:var(--p-missing)':'')+
+      '">сумма долей по договору '+pcs(wsum)+'</span>'+
     '</div>'+
-    '<div class="note">Заказчик принял КС на N % по этапу — те же N % начисляются бригаде. '+
+    '<div class="note">Проценты разбивки берутся из договора, а не из прайса СМР: в договоре у каждой секции '+
+    'своя разбивка по видам работ, и она задаёт, что заказчик принимает по КС-2. Внутренние доли этапов '+
+    'расчётного отдела остались на шаге '+STEP.mount+'. Заказчик принял КС на N % — те же N % начисляются бригаде. '+
     'Ручная правка выплаты требует примечания: без него правка не сохраняется, а рядом остаётся видно, '+
     'сколько было бы зеркально и на сколько ушли.</div>');
 }
@@ -3341,7 +3370,11 @@ function holdPanel(readOnly){
           Object.keys(HOLD_REL).map(function(b){
             return '<option value="'+b+'"'+(b===h.release?' selected':'')+'>'+HOLD_REL[b]+'</option>'; }).join('')+
           '</select>')+'</td>'+
-      '<td class="r num">'+f(t.sum)+'</td>'+
+      '<td class="r num">'+f(t.sum)+
+        '<div class="field-note">'+(h.base === 'total'
+          ? 'если от СМР по КС-2: '+f(hf.rev.smrTot * h.pct / 100)+' ₽'
+          : 'если от всей цены: '+f(hf.rev.K * h.pct / 100)+' ₽')+'</div>'+
+        '<div class="field-note">'+cond('Никита 10.09: возможно, от СМР по КС-2','вопрос Р9, база не подтверждена')+'</div></td>'+
       '<td>'+(t.returned ? 'возвращается '+(t.rel==='ks'?'сразу':FIN.months[t.rel]) : 'за горизонтом плана')+
         (h.release === 'reserve'
           ? '<div class="field"><input type="text" class="'+(h.relMonth?'':'auto-in')+'" data-hold="'+i+
@@ -3363,7 +3396,14 @@ function holdPanel(readOnly){
     '</table></div>'+
     '<div class="note">В итоге шага '+STEP.budget+' участвует только невозвратная часть, она же <b>HOLD</b> объекта: '+
     pcs(holdIrrevocablePct())+' × цена контракта = '+f(r.hold)+' ₽. Возвратная часть живёт только в движении денег. '+
-    'Связка временная, пока не отвечен Р1: в ДИР Универа стоит 1 %, а в договоре 9 + 1.</div>', true);
+    'Связка временная, пока не отвечен Р1: в ДИР Универа стоит 1 %, а в договоре 6 + 1.</div>'+
+    '<div class="note">База удержания правится в строке. Дефолт «вся цена контракта», как в ДИР Андрея '+
+    '(ДИР!D172 = 395 046,23 = 1 % от цены). Никита 10.09 говорит, что гарантийные, возможно, считаются от СМР '+
+    'по КС-2, где у каждой позиции видно материалы и монтаж отдельно. Обе суммы показаны в строке, '+
+    'выбор за РП: <b>вопрос Р9</b>. СМР-часть '+(smrExact()
+      ? 'берётся из колонки «СМР» оферты (Расценки НС9!N)'
+      : 'выведена как монтаж, изготовление и проектирование в цене контракта')+
+    ', сейчас это '+f(hf.rev.smrTot)+' ₽ из '+f(hf.rev.K)+' ₽.</div>', true);
 }
 
 views_8 = function(){
@@ -3765,6 +3805,18 @@ document.getElementById('stage').addEventListener('change', function(e){
     renderAll(); return;
   }
   if (d.inote){ treeState().note[d.inote] = i.value; renderAll(); return; }
+  if (d.kspct){
+    x = num(i.value);
+    if (x === null || x < 0){ renderStage(); return; }
+    var sg = ksStages()[+d.kspct];
+    if (sg){ sg.pct = x; sg.edited = 1; }
+    renderAll(); return;
+  }
+  if (d.ksnote){
+    var sg2 = ksStages()[+d.ksnote];
+    if (sg2) sg2.note = i.value;
+    renderAll(); return;
+  }
   if (d.ks){
     x = num(i.value);
     if (x === null || x < 0 || x > 100){ renderStage(); return; }
