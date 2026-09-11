@@ -27,6 +27,10 @@
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 16px -10px rgba(0,0,0,.6);
   }
 }
+.ks-cum{font-size:10px;color:var(--faint);margin-top:2px;white-space:nowrap}
+.ks-bad>td{background:var(--p-missing-bg)}
+.ks-bad>td:first-child{box-shadow:inset 2px 0 0 var(--p-missing)}
+.ks-tools{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px}
 :root[data-theme="dark"]{
   --ground:#0C0F12; --surface:#171B1F; --surface-2:#1C2126; --sunken:#13171A;
   --line:#232A2F; --line-strong:#39424A;
@@ -465,13 +469,17 @@ tr.blk-row[data-over="1"] td:first-child{box-shadow:inset 2px 0 0 var(--p-missin
       <button data-view="steps" aria-pressed="true">По шагам</button>
       <button data-view="lenta" aria-pressed="false">Лентой</button>
     </span>
+    <span class="seg sm" id="themePick" data-theme-pick role="group" aria-label="Тема экрана">
+      <button data-theme-set="light" aria-pressed="false">Светлая</button>
+      <button data-theme-set="dark" aria-pressed="false">Тёмная</button>
+    </span>
     <button class="btn" data-nav="list">Все объекты</button>
     <button class="btn" data-nav="sup">Поставщики</button>
     <span class="tag">прототип</span>
   </div>
 </header>
 <div class="verline">
-  <span>версия от 10.09, восемь шагов, два объекта, режим ленты</span>
+  <span>версия от 11.09, восемь шагов, два объекта, режим ленты, план процентования за месяц</span>
   <span class="sep">·</span>
   <a href="./v-2026-09-08-11-shagov/">предыдущая версия</a>
 </div>
@@ -1245,6 +1253,18 @@ OBJ.univer = {
            ['Геодезия',        236002.50, 'ДИР!D131'],
            ['Док. обеспечение строительства ППР', 10000.00, 'ДИР!D132']],
   contractType:'витражи',   /* витражный договор Сэтла: удержание 6 + 1 */
+  /* План процентования, заполненный Никитой 11.09 в прототипе (скриншот,
+     тестовое заполнение). Проценты за месяц, каждая строка даёт 100.
+     Никита сказал, что двух месяцев до конца следующего года не хватило,
+     поэтому июльские 30 % по приёмке СКС могут уехать правее. */
+  ksPlan:{src:'Никита 11.09, скриншот, тестовое заполнение', rows:{
+    base:{'сен 26':60, 'окт 26':40},
+    glaz:{'окт 26':80, 'ноя 26':20},
+    seam:{'апр 27':40, 'май 27':60},
+    sash:{'окт 26':70, 'ноя 26':30},
+    docs:{'май 27':100},
+    accp:{'май 27':30, 'июн 27':40, 'июл 27':30}
+  }},
   /* сроки и лаги объекта, лаги из ДДС Сената (документ 24, раздел 3) */
   schedule:{mountStart:2, mountMonths:6, warrantyMonths:12,
             customerPayLag:1, crewPayLag:1, scsMonths:4,
@@ -2535,6 +2555,22 @@ function payNoteModal(i, v){
       '<button class="btn btn-primary" data-pay-ok>Сохранить с примечанием</button></span></div>');
 }
 
+/* «Пересчитать выполнение автоматом» это единственный способ стереть ручной
+   ввод, поэтому спрашиваем подтверждение: план Никиты стоит нескольких часов */
+function ksAutoModal(){
+  var st = ksState(), cnt = Object.keys(st.edited).length;
+  openModal(
+    '<div class="modal-head"><div><h2>Пересчитать выполнение автоматом</h2>'+
+      '<div class="modal-sub">автораскладка встанет по месяцам монтажа из верхнего ряда</div></div>'+
+      '<button class="x" data-close aria-label="Закрыть">✕</button></div>'+
+    '<div class="modal-body"><div class="note">Стереть '+cnt+' заполненных ячеек? '+
+      'Ручные проценты по видам работ пропадут, вернуть их будет нечем: '+
+      'браузер план не хранит.</div></div>'+
+    '<div class="modal-foot"><span class="right">'+
+      '<button class="btn" data-close>Отмена</button>'+
+      '<button class="btn btn-primary" data-ks-auto-ok>Стереть и пересчитать</button></span></div>');
+}
+
 function oldFormModal(){
   var k = factor(), M = mdl(), rr = calc(state.m);
   var rows = dirRows('old').map(function(d){
@@ -3204,21 +3240,70 @@ function shiftLabel(lbl, k){
   t = ((t % 12) + 12) % 12;
   return MON[t] + ' ' + ((y % 100 + 100) % 100);
 }
+/* абсолютный номер месяца из подписи «сен 26»: год × 12 + месяц */
+function labelAbs(lbl){
+  var p = String(lbl).split(' '), m = MON.indexOf(p[0]), y = +p[1];
+  if (m < 0 || isNaN(y)) return null;
+  return (2000 + y) * 12 + m;
+}
+/* крайние месяцы, в которых лежит ручной процент плана объекта */
+function ksPlanEdge(side){
+  if (!O.ksPlan) return null;
+  var best = null;
+  Object.keys(O.ksPlan.rows).forEach(function(k){
+    Object.keys(O.ksPlan.rows[k]).forEach(function(lbl){
+      var a = labelAbs(lbl);
+      if (a == null) return;
+      if (best == null || (side > 0 ? a > best : a < best)) best = a;
+    });
+  });
+  return best;
+}
+function ksPlanLast(){ return ksPlanEdge(1); }
+function ksPlanFirst(){ return ksPlanEdge(-1); }
+/* месяцев перед первой колонкой базы: план Никиты начинается раньше, чем
+   параметр «Монтаж начинается с месяца», а затраты идут за два месяца до КС */
+function leadPad(){
+  var sc = O.schedule, base = FIN.baseMonths || FIN.months;
+  var b0 = labelAbs(base[0]), pf = ksPlanFirst();
+  return (sc.lead || 0) + (b0 != null && pf != null ? Math.max(0, b0 - pf) : 0);
+}
 /* Горизонт плана шире срока стройки: затраты начисляются за два месяца до
    первой КС, а платежи уходят через два месяца после последней. Без этих
-   хвостов деньги теряются по краям и кассовый разрыв выходит заниженным. */
+   хвостов деньги теряются по краям и кассовый разрыв выходит заниженным.
+   Правая граница берётся как максимум из трёх правил: последняя КС с хвостом,
+   самый правый ручной процент с хвостом и декабрь следующего календарного
+   года от старта монтажа. Никите 11.09 не хватило двух месяцев, чтобы
+   дописать план, поэтому до конца следующего года горизонт есть всегда. */
+function horizonLen(base, lead, tail){
+  var sc = O.schedule, b0 = labelAbs(base[0]);
+  var need = lead + base.length + tail;
+  if (b0 != null){
+    var start = labelAbs(shiftLabel(base[0], (sc.mountStart || 1) - 1));
+    if (start != null){
+      var dec = (Math.floor(start / 12) + 1) * 12 + 11;
+      need = Math.max(need, dec - b0 + lead + 1);
+    }
+    var pl = ksPlanLast();
+    if (pl != null) need = Math.max(need, pl - b0 + lead + 1 + tail);
+  }
+  return need + (FIN.plusMonths || 0);
+}
 function buildMonths(){
   var sc = O.schedule, base = FIN.baseMonths || (FIN.baseMonths = FIN.months.slice());
-  var lead = sc.lead || 0, tail = sc.tail || 0, out = [], i;
+  var tail = sc.tail || 0, out = [], i;
+  var lead = leadPad();
+  /* горизонт не сужается: ручная ячейка в дальнем месяце не должна пропасть */
+  var n = Math.max(horizonLen(base, lead, tail), FIN.months.length);
   for (i = lead; i > 0; i--) out.push(shiftLabel(base[0], -i));
-  for (i = 0; i < base.length; i++) out.push(base[i]);
-  for (i = 1; i <= tail; i++) out.push(shiftLabel(base[base.length - 1], i));
+  for (i = 0; i < n - lead; i++) out.push(shiftLabel(base[0], i));
   FIN.months = out;
+  ksFit();
 }
 function nMonths(){ return FIN.months.length; }
 function mountWindow(){
   var sc = sched(), n = nMonths();
-  var a = Math.max(0, Math.min(n - 1, (sc.lead || 0) + sc.mountStart - 1));
+  var a = Math.max(0, Math.min(n - 1, leadPad() + sc.mountStart - 1));
   var b = Math.max(a, Math.min(n - 1, a + sc.mountMonths - 1));
   return {a:a, b:b, handover:Math.min(n - 1, b + 1)};
 }
@@ -3236,7 +3321,7 @@ function smrShare(){
 }
 function smrExact(){ return !!O.offer; }
 /* автоматическое выполнение: этапы идут друг за другом по месяцам монтажа,
-   значения нарастающим итогом, последний месяц окна даёт 100 % */
+   в ячейке лежит процент, закрываемый в этом месяце */
 /* ---- виды работ по договору -----------------------------------------
    Процентовка с заказчиком идёт не по внутренним этапам прайса СМР, а по
    видам работ из договора: там у каждой секции своя разбивка, и она задаёт,
@@ -3261,35 +3346,87 @@ function ksStages(){
 }
 function ksStagesSum(){ return ksStages().reduce(function(a, x){ return a + x.pct; }, 0); }
 /* автомат: виды работ идут друг за другом по месяцам монтажа, документация
-   и приёмка СКС закрываются последним месяцем; значения нарастающим итогом */
+   и приёмка СКС закрываются последним месяцем. В ячейке процент месяца, а не
+   накопление: так заполняет план Никита (11.09) и так же устроен ДИР!14. */
 function ksAuto(){
   var w = mountWindow(), n = nMonths(), out = {};
   ksStages().forEach(function(s){
     var arr = [], i;
+    for (i = 0; i < n; i++) arr.push(0);
     if (s.off === 'last'){
-      for (i = 0; i < n; i++) arr.push(i >= w.b ? 100 : 0);
+      arr[Math.max(0, Math.min(n - 1, w.b))] = 100;
     } else {
-      var st = Math.min(w.b, w.a + (s.off || 0));
-      for (i = 0; i < n; i++){
-        if (i < st) arr.push(0);
-        else if (i >= w.b) arr.push(100);
-        else arr.push(Math.round((i - st + 1) / (w.b - st + 1) * 1000) / 10);
+      var st = Math.min(w.b, w.a + (s.off || 0)), len = w.b - st + 1, prev = 0;
+      for (i = st; i <= w.b && i < n; i++){
+        var cum = Math.round((i - st + 1) / len * 1000) / 10;
+        arr[i] = Math.round((cum - prev) * 10) / 10;
+        prev = cum;
       }
     }
     out[s.k] = arr;
   });
   return out;
 }
+/* План объекта, записанный руками: проценты стоят по подписям месяцев, а не
+   по индексам, чтобы пережить сдвиг горизонта. Такие ячейки охряные. */
+function ksApplyPlan(st){
+  if (!O.ksPlan) return;
+  Object.keys(O.ksPlan.rows).forEach(function(k){
+    var row = O.ksPlan.rows[k], arr = st.done[k];
+    if (!arr) return;
+    for (var i = 0; i < arr.length; i++) arr[i] = 0;
+    Object.keys(row).forEach(function(lbl){
+      var i = FIN.months.indexOf(lbl);
+      if (i >= 0){ arr[i] = row[lbl]; st.edited[k + '-' + i] = 1; }
+    });
+  });
+}
 function ksState(){
-  if (!state.ks) state.ks = {done:ksAuto(), edited:{}, pay:{}};
+  if (!state.ks){
+    state.ks = {done:ksAuto(), edited:{}, pay:{}};
+    ksApplyPlan(state.ks);
+  }
   return state.ks;
 }
 function ksReset(){ state.ks = {done:ksAuto(), edited:{}, pay:{}}; }
+/* колонок в горизонте стало больше: дотягиваем ряды нулями, не теряя ручные */
+function ksFit(){
+  if (typeof state === 'undefined' || !state || !state.ks) return;
+  var n = FIN.months.length;
+  ksStages().forEach(function(s){
+    var a = state.ks.done[s.k] || (state.ks.done[s.k] = []);
+    while (a.length < n) a.push(0);
+  });
+}
+/* в строке есть ручные правки: такая строка автоматом не пересчитывается */
+function ksRowEdited(k){
+  var ed = ksState().edited;
+  return Object.keys(ed).some(function(key){ return key.split('-')[0] === k; });
+}
+/* смена параметра верхнего ряда пересчитывает только нетронутые строки:
+   Никита 11.09 дважды потерял ввод, когда менял «Месяцев монтажа» */
+function ksAutoRefresh(){
+  var st = ksState(), auto = ksAuto();
+  ksStages().forEach(function(s){ if (!ksRowEdited(s.k)) st.done[s.k] = auto[s.k]; });
+}
 /* прирост выполнения вида работ за месяц, в долях */
 function ksDelta(k, i){
   var a = ksState().done[k] || [];
-  var prev = i ? (a[i - 1] || 0) : 0;
-  return ((a[i] || 0) - prev) / 100;
+  return (a[i] || 0) / 100;
+}
+/* нарастающий итог по строке на конец месяца i, в процентах */
+function ksCum(k, i){
+  var a = ksState().done[k] || [], v = 0;
+  for (var j = 0; j <= i && j < a.length; j++) v += (a[j] || 0);
+  return Math.round(v * 10) / 10;
+}
+function ksRowSum(k){ return ksCum(k, (ksState().done[k] || []).length - 1); }
+/* план закрыт на столько процентов цены: строки, не дошедшие до 100, дают
+   меньше выручки, и это видно в итоге шага, а не прячется */
+function ksPlanDone(){
+  var tot = ksStagesSum(), v = 0;
+  ksStages().forEach(function(s){ v += Math.min(100, ksRowSum(s.k)) * s.pct; });
+  return tot ? v / tot : 0;
 }
 /* доля КС месяца в цене контракта, в долях */
 function ksMonthShare(){
@@ -3345,18 +3482,22 @@ function ksRevenue(){
     smr.push(sh[i] * smrTot);
     mat.push(sh[i] * matTot);
   }
-  /* финальная КС при сдаче: доля контракта уходит на finalKsLag месяцев позже
-     последней рабочей КС (у Сената 7 % через полгода, ДИР!AG14).
-     У Догмы и Универа доля 0, поэтому раскладка не меняется. */
-  var sc = sched();
+  /* отдельный платёж после сдачи: доля контракта уходит на finalKsLag месяцев
+     позже последней рабочей КС (у Сената 7 % через полгода, ДИР!AG14).
+     Платёж идёт сверх видов работ и раскладку по месяцам не нормирует: если
+     доли видов работ уже дают 100 %, выручка выходит за цену контракта, и об
+     этом сказано над полем, а не исправлено молча. У Догмы и Универа доля 0. */
+  var sc = sched(), extra = 0;
   if (sc.finalKsShare > 0){
     var lastIdx = 0;
     for (i = 0; i < n; i++) if (all[i] > 0.005) lastIdx = i;
     var t = Math.min(n - 1, lastIdx + sc.finalKsLag), cut = sc.finalKsShare / 100;
-    for (i = 0; i < n; i++){ smr[i] *= (1 - cut); mat[i] *= (1 - cut); all[i] *= (1 - cut); }
     smr[t] += smrTot * cut; mat[t] += matTot * cut; all[t] += K * cut;
+    extra = K * cut;
   }
-  return {smr:smr, mat:mat, all:all, K:K, smrTot:smrTot, matTot:matTot, share:share};
+  var allTot = all.reduce(function(a, b){ return a + b; }, 0);
+  return {smr:smr, mat:mat, all:all, K:K, smrTot:smrTot, matTot:matTot, share:share,
+          extra:extra, allTot:allTot};
 }
 
 /* ---- доли КС: из них строятся все автоматические раскладки ----------
@@ -3810,20 +3951,29 @@ function ksPanel(){
 
   var srows = W.map(function(sg, si){
     var tds = '', sum = wsum ? K * sg.pct / wsum : 0;
+    var rowSum = ksRowSum(sg.k), bad = st.bad === sg.k;
     for (var i = 0; i < n; i++){
       var key = sg.k + '-' + i, ed = st.edited[key];
+      var v = st.done[sg.k] ? st.done[sg.k][i] : 0;
       tds += '<td class="r"><input type="text" class="'+(ed?'':'auto-in')+'" data-ks="'+key+
-        '" value="'+(st.done[sg.k] ? st.done[sg.k][i] : 0)+'" aria-label="'+FIN.months[i]+', % выполнения"></td>';
+        '" value="'+v+'" aria-label="'+FIN.months[i]+', % за месяц">'+
+        (v > 0 ? '<div class="ks-cum">накоплено '+pcs(ksCum(sg.k, i))+'</div>' : '')+'</td>';
     }
-    return '<tr><td class="nm">'+sg.n+
+    var ctrl = Math.abs(rowSum - 100) < 0.05
+      ? '<div class="ks-cum">распределено 100 %</div>'
+      : '<div class="ks-cum" style="color:var(--p-missing)">распределено '+pcs(rowSum)+
+        ', '+(rowSum < 100 ? 'осталось '+pcs(100 - rowSum) : 'лишних '+pcs(rowSum - 100))+'</div>';
+    return '<tr'+(bad ? ' class="ks-bad"' : '')+'><td class="nm">'+sg.n+
       '<div class="field" style="margin-top:3px"><input type="text" class="'+(sg.edited?'':'auto-in')+
         '" data-kspct="'+si+'" value="'+sg.pct+'" aria-label="Доля вида работ, %"><span class="sum-unit">%</span></div>'+
       '<div style="font-size:10.5px;color:var(--faint)">'+f(sum)+' ₽ · '+sg.src+'</div>'+
+      (bad ? '<div class="ks-cum" style="color:var(--p-missing)">правка не применена: по строке вышло '+
+             'больше 100 %</div>' : '')+
       (sg.edited
         ? '<input type="text" class="wide" data-ksnote="'+si+'" value="'+(sg.note||'')+
-          '" placeholder="примечание к правке доли" aria-label="Примечание к доле">'
+          '" placeholder="примечание к правке доли" aria-label="Примечание к правке доли">'
         : '')+'</td>'+
-      tds+'<td class="r num">'+f(sum)+'</td></tr>';
+      tds+'<td class="r num">'+f(sum)+ctrl+'</td></tr>';
   }).join('');
 
   var payTds = '';
@@ -3840,7 +3990,29 @@ function ksPanel(){
 
   var wnd = mountWindow();
 
-  return panel('Выполнение по КС', 'виды работ по договору, проценты выполнения нарастающим итогом',
+  /* Отдельный платёж после сдачи, сверх видов работ: редкий случай, поэтому
+     поля убраны в свёртку. Никита 11.09 принял это поле за приёмку СКС и
+     поставил 3 %, хотя приёмка СКС стоит строкой в таблице выше. */
+  var finWarn = (sc.finalKsShare > 0 && Math.abs(wsum - 100) < 0.05)
+    ? '<div class="field-note" style="color:var(--p-missing);margin-bottom:8px">'+
+      'доли видов работ уже дают 100 %, этот платёж пойдёт сверх цены контракта</div>'
+    : '';
+  var special = fold('Особые условия договора',
+    sc.finalKsShare > 0 ? 'отдельный платёж '+pcs(sc.finalKsShare)+' сверх видов работ' : 'платежей сверх видов работ нет',
+    finWarn+
+    '<div class="grid3" style="background:none;gap:16px">'+
+    '<div><div class="field-lbl">Отдельный платёж после сдачи, сверх видов работ, % контракта</div>'+
+      '<input type="text" class="'+(sc.finalKsShare>0?'':'auto-in')+'" data-sched="finalKsShare" value="'+
+      sc.finalKsShare+'" aria-label="Отдельный платёж после сдачи, % контракта">'+
+      '<div class="field-note">Редкий случай, как 7 % у Сената через полгода (ДИР!AG14). '+
+      'Приёмка СКС сюда не входит, она строкой в таблице выше</div></div>'+
+    '<div><div class="field-lbl">Через сколько месяцев после последней КС</div>'+
+      '<input type="text" class="'+(sc.finalKsShare>0?'':'auto-in')+'" data-sched="finalKsLag" value="'+
+      sc.finalKsLag+'" aria-label="Через сколько месяцев после последней КС">'+
+      '<div class="field-note">считается от месяца последней рабочей КС</div></div>'+
+    '</div>', sc.finalKsShare > 0);
+
+  return panel('Выполнение по КС', 'виды работ по договору, процент, закрываемый в месяце',
     '<div class="grid3" style="background:none;gap:16px;margin-bottom:14px">'+
     '<div><div class="field-lbl">Монтаж начинается с месяца</div>'+
       '<input type="text" class="'+(sc.cond?'':'auto-in')+'" data-sched="mountStart" value="'+sc.mountStart+'" aria-label="Месяц начала монтажа">'+
@@ -3848,7 +4020,8 @@ function ksPanel(){
       (sc.cond ? ' · '+condMark('сроков в файле нет') : '')+'</div></div>'+
     '<div><div class="field-lbl">Месяцев монтажа</div>'+
       '<input type="text" class="'+(sc.cond?'':'auto-in')+'" data-sched="mountMonths" value="'+sc.mountMonths+'" aria-label="Месяцев монтажа">'+
-      '<div class="field-note">сдача '+FIN.months[wnd.handover]+'</div></div>'+
+      '<div class="field-note">для автораскладки; фактические сроки задаёт таблица ниже · сдача '+
+      FIN.months[wnd.handover]+'</div></div>'+
     '<div><div class="field-lbl">Гарантийный срок объекта, мес</div>'+
       '<input type="text" class="'+(sc.cond?'':'auto-in')+'" data-sched="warrantyMonths" value="'+sc.warrantyMonths+'" aria-label="Гарантийный срок объекта, мес">'+
       '<div class="field-note">от месяца сдачи; по нему раскладывается гарантийное обслуживание</div></div>'+
@@ -3859,13 +4032,12 @@ function ksPanel(){
     '<div><div class="field-lbl">Сдача СКС и клининг, месяцев перед финальной КС</div>'+
       '<input type="text" class="auto-in" data-sched="scsMonths" value="'+sc.scsMonths+'" aria-label="Месяцев перед финальной КС">'+
       '<div class="field-note">ДИР Сената!137, 139: четыре равные части</div></div>'+
-    '<div><div class="field-lbl">Финальная КС при сдаче, % контракта</div>'+
-      '<input type="text" class="auto-in" data-sched="finalKsShare" value="'+sc.finalKsShare+'" aria-label="Доля финальной КС">'+
-      '<div class="field-note">у Сената 7 % через полгода (ДИР!AG14), у этого объекта доли нет</div></div>'+
-    '<div><div class="field-lbl">Финальная КС, месяцев после последней рабочей</div>'+
-      '<input type="text" class="auto-in" data-sched="finalKsLag" value="'+sc.finalKsLag+'" aria-label="Сдвиг финальной КС">'+
-      '<div class="field-note">считается от месяца последней рабочей КС</div></div>'+
     '</div>'+
+
+    '<div class="ks-tools"><span class="field-note">В ячейке процент, который закрывается '+
+      '<b>в этом месяце</b>. Нарастающий итог показан серым под ячейкой.'+
+      (O.ksPlan ? ' Охряные ячейки: '+O.ksPlan.src+'.' : '')+'</span>'+
+      '<button class="btn btn-sm" data-ks-plus>+ месяц</button></div>'+
 
     '<div class="tw months"><table><thead><tr><th>Вид работ по договору</th>'+monthCols()+'<th class="r">Всего, ₽</th></tr></thead>'+
     '<tbody>'+srows+
@@ -3878,7 +4050,7 @@ function ksPanel(){
     '<tr><td class="nm">Выручка материалы<div style="font-size:10.5px;color:var(--faint)">по месяцам поставки</div></td>'+
       numCells(rev.mat)+'<td class="r num">'+f(rev.matTot)+'</td></tr>'+
     '<tr class="inflow"><td class="nm"><b>Выручка, всего</b></td>'+numCells(rev.all)+
-      '<td class="r num">'+f(rev.K)+'</td></tr>'+
+      '<td class="r num">'+f(rev.allTot)+'</td></tr>'+
     '<tr><td class="nm">Удержано с КС<div style="font-size:10.5px;color:var(--faint)">по условиям договора</div></td>'+
       numCells(hf.held, 'color:var(--p-missing)')+'<td class="r num">'+f(hf.heldSum)+'</td></tr>'+
     '<tr><td class="nm">Возврат удержания</td>'+numCells(hf.back, 'color:var(--p-auto)')+
@@ -3907,6 +4079,7 @@ function ksPanel(){
     '<span class="field-note'+(Math.abs(wsum-100)>0.001?'" style="color:var(--p-missing)':'')+
       '">сумма долей по договору '+pcs(wsum)+'</span>'+
     '</div>'+
+    special +
     '<div class="note">Проценты разбивки берутся из договора, а не из прайса СМР: в договоре у каждой секции '+
     'своя разбивка по видам работ, и она задаёт, что заказчик принимает по КС-2. Внутренние доли этапов '+
     'расчётного отдела остались на шаге '+STEP.mount+'. Заказчик принял КС на N %, те же N % начисляются бригаде. '+
@@ -4039,6 +4212,10 @@ views_8 = function(){
   panel('Что уходит за горизонт расчёта', '',
     '<div class="kv">' +
     '<div><span class="k">Поступления после ' + FIN.months[n - 1] + '</span><span class="v">' + f(F.tail) + ' ₽</span></div>' +
+    (ksPlanDone() < 99.95
+      ? '<div><span class="k">Не запроцентовано: план закрыт на ' + pcs(ksPlanDone()) + '</span>' +
+        '<span class="v" style="color:var(--p-missing)">' + f(F.K * (100 - ksPlanDone()) / 100) + ' ₽</span></div>'
+      : '') +
     '<div><span class="k">Удержано с КС за горизонт плана</span><span class="v">' + f(F.hold.heldSum) + ' ₽</span></div>' +
     '<div><span class="k">Из них возвращено в плане</span><span class="v">' + f(F.hold.backSum) + ' ₽</span></div>' +
     '<div><span class="k">Невозвратная часть, она же удержание в ДИР</span><span class="v">' + f(F.holdSum) + ' ₽</span></div>' +
@@ -4523,6 +4700,18 @@ document.addEventListener('click', function(e){
   if (nav) setMode(nav.dataset.nav === 'sup' ? 'sup' : 'list');
 });
 
+/* Тема по умолчанию идёт от системы (prefers-color-scheme). Переключатель
+   ставит её явно и нигде не хранится: перезагрузка возвращает системную. */
+document.getElementById('themePick').addEventListener('click', function(e){
+  var t = e.target.closest('[data-theme-set]');
+  if (!t) return;
+  var th = t.dataset.themeSet;
+  document.documentElement.setAttribute('data-theme', th);
+  Array.prototype.forEach.call(document.querySelectorAll('[data-theme-set]'), function(b){
+    b.setAttribute('aria-pressed', b.dataset.themeSet === th ? 'true' : 'false');
+  });
+});
+
 document.getElementById('stage').addEventListener('click', function(e){
   var t;
   if ((t = e.target.closest('[data-go]'))){
@@ -4577,7 +4766,11 @@ document.getElementById('stage').addEventListener('click', function(e){
     renderStage(); return;
   }
   if (e.target.closest('[data-ks-mirror]')){ ksState().pay = {}; renderAll(); return; }
-  if (e.target.closest('[data-ks-auto]')){ ksReset(); renderAll(); return; }
+  if (e.target.closest('[data-ks-plus]')){
+    FIN.plusMonths = (FIN.plusMonths || 0) + 1;
+    buildMonths(); renderAll(); return;
+  }
+  if (e.target.closest('[data-ks-auto]')){ ksAutoModal(); return; }
   if (e.target.closest('[data-add-art]')){
     ARTICLES.push({k:'new'+(ARTICLES.length+1), n:'Новая статья', req:'optional', on:false, dir:OTH,
                    rec:0, acc:0, src:'заведена руками ' + TODAY, note:'опишите статью и поставьте сумму'});
@@ -4740,9 +4933,14 @@ document.getElementById('stage').addEventListener('change', function(e){
   }
   if (d.ks){
     x = num(i.value);
-    if (x === null || x < 0 || x > 100){ renderStage(); return; }
     var kp = d.ks.split('-'), ki = +kp[1], st = ksState();
-    if (st.done[kp[0]]){ st.done[kp[0]][ki] = x; st.edited[d.ks] = 1; }
+    if (x === null || x < 0 || x > 100){ st.bad = kp[0]; renderAll(); return; }
+    /* процент месяца, а не накопление: по строке в сумме не больше 100 */
+    var arr = st.done[kp[0]];
+    if (!arr){ renderStage(); return; }
+    var was = arr[ki] || 0, sum = ksRowSum(kp[0]) - was + x;
+    if (sum > 100.05){ st.bad = kp[0]; renderAll(); return; }
+    arr[ki] = x; st.edited[d.ks] = 1; st.bad = null;
     renderAll(); return;
   }
   if (d.pay !== undefined && i.hasAttribute('data-pay')){
@@ -4755,7 +4953,9 @@ document.getElementById('stage').addEventListener('change', function(e){
     if (x === null || x < 0){ renderStage(); return; }
     O.schedule[d.sched] = x;
     buildMonths();
-    if (d.sched !== 'crewPayLag' && d.sched !== 'customerPayLag') ksReset();
+    /* Никита 11.09 дважды потерял ввод: ручные строки переживают смену
+       параметра, автоматом пересчитываются только нетронутые */
+    if (d.sched !== 'crewPayLag' && d.sched !== 'customerPayLag') ksAutoRefresh();
     renderAll(); return;
   }
   if (d.hold){
@@ -4829,6 +5029,7 @@ document.getElementById('res').addEventListener('toggle', function(e){
 document.getElementById('overlay').addEventListener('click', function(e){
   if (e.target.id === 'overlay'){ closeModal(); return; }
   var t;
+  if (e.target.closest('[data-ks-auto-ok]')){ closeModal(); ksReset(); renderAll(); return; }
   if (e.target.closest('[data-close]')){ closeModal(); return; }
   if ((t = e.target.closest('[data-cons]'))){ consModal(t.dataset.cons); return; }
   if ((t = e.target.closest('[data-dict-pick]'))){
