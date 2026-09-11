@@ -479,7 +479,7 @@ tr.blk-row[data-over="1"] td:first-child{box-shadow:inset 2px 0 0 var(--p-missin
   </div>
 </header>
 <div class="verline">
-  <span>версия от 11.09, восемь шагов, два объекта, режим ленты, план процентования за месяц</span>
+  <span>версия от 11.09, восемь шагов, два объекта, режим ленты, план процентования за месяц, ввод Никиты</span>
   <span class="sep">·</span>
   <a href="./v-2026-09-08-11-shagov/">предыдущая версия</a>
 </div>
@@ -1044,7 +1044,6 @@ OBJ.dogma = {
   schedule:{mountStart:2, mountMonths:6, warrantyMonths:12,
             customerPayLag:1, crewPayLag:1, scsMonths:4, actApprovalMonths:3,
             finalKsShare:0, finalKsLag:0, lead:2, tail:2, cond:1},
-  ksStagesSrc:'договор 150626ВХ, п. 2.1.25–2.1.31, секция 4; остальные секции считаем такими же, уточняется',
   /* договора на Догму нет, берём разбивку Сэтла как дефолт справочника */
   ksStagesSrc:'по договору Сэтла, п. 2.1.25–2.1.31; для Догмы условно, своего договора нет',
   ARTICLES:[
@@ -1282,9 +1281,11 @@ OBJ.univer = {
     docs:{'май 27':100},
     accp:{'май 27':30, 'июн 27':40, 'июл 27':30}
   }},
-  /* сроки и лаги объекта, лаги из ДДС Сената (документ 24, раздел 3) */
-  schedule:{mountStart:2, mountMonths:6, warrantyMonths:12,
-            customerPayLag:1, crewPayLag:1, scsMonths:4, actApprovalMonths:3,
+  /* Сроки и лаги объекта, лаги из ДДС Сената (документ 24, раздел 3).
+     Гарантийный срок и приёмка СКС с экрана Никиты 11.09; месяцы монтажа
+     не переносим: план в таблице ручной, параметры идут только в автораскладку. */
+  schedule:{mountStart:2, mountMonths:6, warrantyMonths:66,
+            customerPayLag:1, crewPayLag:1, scsMonths:3, actApprovalMonths:3,
             finalKsShare:0, finalKsLag:0, lead:2, tail:2, cond:1},
   /* шаг 6: статьи, свод ДИР!D143:D161 */
   ARTICLES:[
@@ -1367,7 +1368,9 @@ OBJ.univer = {
       {k:'oth',  name:'Прочие расходы',            d:[17,17,17,17,16,16,0,0],hint:'бытовки, техника, вывоз мусора: помесячно'}
     ],
     work:[5,15,20,25,20,15,0,0],
-    avans:0, delay:30, hold:1,
+    /* аванс с экрана Никиты 11.09: 30 % это 11 851 387 ₽. По договору
+       не сверяли, месяц поступления тоже не знаем, вопрос Р15 */
+    avans:30, delay:30, hold:1,
     edited:{}, unit:'pct'
   },
   /* оферта заказчику, лист «Расценки НС9» и «Оферта НС 9»: шесть расценок, объём по семи секциям */
@@ -2645,6 +2648,15 @@ var ISSUES = [
    txt:'В ДИР Универа удержание 1 % от всей цены (D172 = 395 046,23), а по договору от СМР: откуда расхождение'},
   {n:'Р13', from:'11.09.2026', who:'Сергей и Никита', norm:'rp', steps:[8], objs:['univer'],
    txt:'База удержания по фасадным договорам Сэтла: от СМР, как по витражам, или от всей цены'},
+  {n:'Р15', from:'11.09.2026', who:'Никита', norm:'rp', steps:[8], objs:['univer'],
+   txt:'Аванс 30 % по Универу: так в договоре? Когда приходит: при подписании, за сколько до начала монтажа',
+   why:'в прототипе аванс поставлен с экрана Никиты и приходит первым месяцем горизонта, '+
+       'за два месяца до первой КС: это следствие края горизонта, а не решение'},
+  {n:'Р16', from:'11.09.2026', who:'Никита', norm:'rp', steps:[8], objs:['univer'],
+   txt:'Зимняя пауза дек 26 – мар 27: площадка стоит (бытовки, охрана, техника, прораб платятся) или законсервирована',
+   why:'по правилу ДИР Сената равномерные статьи идут только в месяцы с КС, поэтому в прототипе '+
+       'месяц без КС почти без расходов: остаток за четыре зимних месяца просел всего на 136 тыс. '+
+       'Модель не меняем до ответа'},
   {n:'Р10', from:'10.09.2026', who:'Сергей', norm:'rp', steps:[8], objs:['univer'],
    txt:'Разбивка по видам работ одинакова для всех семи секций Универа или отличается'}
 ];
@@ -2762,8 +2774,10 @@ function blockers(){
   ISSUES.forEach(function(x){
     if (x.cond) return;                       // условные данные уже добавлены выше
     if (x.objs.indexOf(oid) < 0) return;
-    add({kind:'issue', tag:x.n, what:x.n + '. ' + x.txt, step:x.steps[0], who:x.who,
-         from:x.from, norm:x.norm});
+    add({kind:'issue', tag:x.n,
+         what:x.n + '. ' + x.txt +
+              (x.why ? '<div style="font-size:10.5px;color:var(--faint)">' + x.why + '</div>' : ''),
+         step:x.steps[0], who:x.who, from:x.from, norm:x.norm});
   });
 
   /* сначала просроченное, внутри — по времени ожидания */
@@ -4252,14 +4266,16 @@ function ksPanel(){
           (finalActMonth() < nMonths() ? FIN.months[finalActMonth()] : 'за горизонтом'))+'</div></div>'+
     '<div><div class="field-lbl">Гарантийный срок объекта, мес</div>'+
       '<input type="text" class="'+(sc.cond?'':'auto-in')+'" data-sched="warrantyMonths" value="'+sc.warrantyMonths+'" aria-label="Гарантийный срок объекта, мес">'+
-      '<div class="field-note">от месяца сдачи; по нему раскладывается гарантийное обслуживание</div></div>'+
+      '<div class="field-note">от месяца сдачи; по нему раскладывается гарантийное обслуживание'+
+      (sc.warrantyMonths === 66 ? ' · Никита 10.09: 5,5 года с ввода объекта в эксплуатацию' : '')+'</div></div>'+
     '<div><div class="field-lbl">Оплата бригаде, месяцев после начисления</div>'+
       '<input type="text" class="auto-in" data-sched="crewPayLag" value="'+sc.crewPayLag+'" aria-label="Сдвиг оплаты бригаде">'+
       '<div class="field-note">Никита 10.09: бригадам платим сразу как поступают деньги от заказчика, '+
       'то есть в тот же месяц, что и оплата по КС</div></div>'+
     '<div><div class="field-lbl">Сдача СКС и клининг, месяцев перед финальной КС</div>'+
       '<input type="text" class="auto-in" data-sched="scsMonths" value="'+sc.scsMonths+'" aria-label="Месяцев перед финальной КС">'+
-      '<div class="field-note">ДИР Сената!137, 139: четыре равные части</div></div>'+
+      '<div class="field-note">ДИР Сената!137, 139: равные части, сейчас '+sc.scsMonths+
+      (sc.scsMonths === 3 ? ' · Никита 11.09: в его плане приёмка СКС идёт май–июл 27' : '')+'</div></div>'+
     '</div>'+
 
     '<div class="ks-tools"><span class="field-note">В ячейке процент, который закрывается '+
@@ -4431,7 +4447,12 @@ views_8 = function(){
     '<div class="grid3" style="gap:16px;background:none">' +
     '<div><div class="eyebrow">Аванс, % от контракта</div>' +
       '<div class="field" style="margin-top:6px"><input type="text" id="finAvans" value="' + FIN.avans + '"><span class="sum-unit">%</span></div>' +
-      '<div class="field-note">' + f(F.avansSum) + ' ₽, зачитывается в актах</div></div>' +
+      '<div class="field-note">' + f(F.avansSum) + ' ₽, зачитывается в актах' +
+      (FIN.avans > 0
+        ? ' · ' + cond('Никита 11.09, ввёл на экране', 'по договору 150626ВХ не сверяли, Р15') +
+          '<br>месяц поступления аванса условный: первый месяц горизонта, ' + FIN.months[0] +
+          '; уточняется у РП, <b>Р15</b>'
+        : '') + '</div></div>' +
     '<div><div class="eyebrow">Оплата заказчиком, месяцев после КС</div>' +
       '<div class="field" style="margin-top:6px"><input type="text" data-sched="customerPayLag" value="' +
       sched().customerPayLag + '"><span class="sum-unit">мес</span></div>' +
@@ -4729,14 +4750,20 @@ function inputKey(el){
   for (k in d) if (Object.prototype.hasOwnProperty.call(d, k)) ks.push(k + '=' + d[k]);
   return el.tagName + '|' + (el.id || '') + '|' + ks.sort().join('&');
 }
-/* куда уходил фокус: 1 это Tab и Enter, -1 это Shift+Tab, 0 это обычная правка */
-var tabDir = 0;
+/* Куда должен уйти фокус после перерисовки. Считается до правки, на keydown,
+   потому что восстанавливать фокус после перерисовки бесполезно: браузер
+   доделывает свой переход по Tab на уже снесённом узле и кладёт фокус на
+   BODY уже после нас. Поэтому переход мы отменяем и делаем сами (С14). */
+var focusWanted = null;
+/* правка отклонена: фокус остаётся в той же ячейке, молча перескакивать нельзя */
+var editRejected = false;
+/* значение поля на момент, когда в него вошли: если не менялось, перерисовки нет */
+var focusVal = null;
 function stageSnapshot(){
   var a = document.activeElement, st = document.getElementById('stage');
-  var sn = {y: window.pageYOffset || 0, key:null, sel:null, tab:0};
+  var sn = {y: window.pageYOffset || 0, key:null, sel:null, tab:!!focusWanted};
   if (a && st.contains(a) && (a.tagName === 'INPUT' || a.tagName === 'SELECT')){
     sn.key = inputKey(a);
-    sn.tab = tabDir;
     try { sn.sel = [a.selectionStart, a.selectionEnd]; } catch(e){}
   }
   return sn;
@@ -4747,22 +4774,48 @@ function stageFocusables(){
     '#stage a[href], #stage button:not([disabled]), #stage input:not([disabled]), ' +
     '#stage select:not([disabled]), #stage textarea:not([disabled])'));
 }
-/* Правка поля вызывает перерисовку раньше, чем браузер успевает перевести
-   фокус по Tab, и фокус улетает на BODY. Направление запоминаем на keydown
-   и после перерисовки ставим фокус сами. */
+function byKey(key){
+  if (!key) return null;
+  var list = stageFocusables(), i;
+  for (i = 0; i < list.length; i++) if (inputKey(list[i]) === key) return list[i];
+  return null;
+}
+/* Адрес соседней ячейки плана. По общему списку фокусируемых Tab из последней
+   ячейки строки попал бы на «Долю вида работ» следующей строки и на её
+   примечание, а заполняющий план ждёт ячейку. Поэтому внутри таблицы плана
+   считаем по data-ks: вдоль строки, после последней на первую ячейку
+   следующей строки; Enter вниз по столбцу. С краёв таблицы уходим наружу
+   общим порядком. */
+function ksNeighbour(el, dir, down){
+  var d = el.dataset || {};
+  if (!d.ks) return null;
+  var p = String(d.ks).split('-'), k = p[0], i = +p[1];
+  var W = ksStages(), row = -1, j;
+  for (j = 0; j < W.length; j++) if (W[j].k === k) row = j;
+  if (row < 0) return null;
+  var n = nMonths(), ni = i, nrow = row;
+  if (down){ nrow = row + dir; }
+  else {
+    ni = i + dir;
+    if (ni >= n){ ni = 0; nrow = row + 1; }
+    else if (ni < 0){ ni = n - 1; nrow = row - 1; }
+  }
+  if (nrow < 0 || nrow >= W.length) return null;      // край таблицы: наружу
+  var to = document.querySelector('#stage input[data-ks="' + W[nrow].k + '-' + ni + '"]');
+  return to ? inputKey(to) : null;
+}
+/* адрес по общему порядку табуляции: на шаг вперёд или назад */
+function stageNeighbour(el, dir){
+  var list = stageFocusables(), at = list.indexOf(el), to = at + dir;
+  return (at >= 0 && to >= 0 && to < list.length) ? inputKey(list[to]) : null;
+}
 function stageRestore(sn, keepScroll){
   if (!sn) return;
-  var el = null, i;
-  if (sn.key){
-    var els = document.querySelectorAll('#stage input, #stage select');
-    for (i = 0; i < els.length; i++) if (inputKey(els[i]) === sn.key){ el = els[i]; break; }
-  }
-  if (el && sn.tab){
-    var list = stageFocusables(), at = list.indexOf(el), to = at + sn.tab;
-    el = (at >= 0 && to >= 0 && to < list.length) ? list[to] : el;
-  }
+  /* отклонённая правка фокус не двигает: строка подсвечена, курсор в ней */
+  var want = editRejected ? null : focusWanted;
+  var el = byKey(want) || byKey(sn.key);
   if (el){
-    /* без Tab поле и так на экране: возвращаем фокус, не дёргая прокрутку */
+    /* без перехода поле и так на экране: возвращаем фокус, не дёргая прокрутку */
     try { el.focus(sn.tab ? undefined : {preventScroll:true}); } catch(e){ el.focus(); }
     if (sn.tab){ try { el.select(); } catch(e){} }
     else { try { if (sn.sel && sn.sel[0] != null) el.setSelectionRange(sn.sel[0], sn.sel[1]); } catch(e){} }
@@ -4841,21 +4894,30 @@ function setView(v){
   else if (window.pageYOffset) window.scrollTo(0, 0);
 }
 
+/* Перерисовка внутри перерисовки. Chrome шлёт свой change, когда поле с
+   несохранённым значением уходит из документа, а уходит оно ровно в момент
+   подстановки innerHTML. Обработчик правки запускается второй раз, и внешняя
+   перерисовка потом возвращает фокус по снимку, снятому до правки. Поэтому
+   вложенную перерисовку пропускаем: внешняя всё равно строит итоговый DOM. */
+var rendering = false;
 function renderStage(){
+  if (rendering) return;
+  rendering = true;
+  try { renderStageNow(); } finally { rendering = false; }
+}
+function renderStageNow(){
   var el = document.getElementById('stage'), sn;
-  if (state.mode === 'list'){ el.innerHTML = objectsView(); tabDir = 0; return; }
-  if (state.mode === 'sup'){ el.innerHTML = suppliersView(); tabDir = 0; return; }
+  if (state.mode === 'list'){ el.innerHTML = objectsView(); focusWanted = null; return; }
+  if (state.mode === 'sup'){ el.innerHTML = suppliersView(); focusWanted = null; return; }
   if (state.view === 'lenta'){
     sn = stageSnapshot();
     renderLenta();
     stageRestore(sn, true);
-    tabDir = 0;
     return;
   }
   sn = stageSnapshot();
   el.innerHTML = blockersPanel() + views[state.step]();
   stageRestore(sn, false);
-  tabDir = 0;
 }
 
 function row(k, v, cls){
@@ -5070,12 +5132,33 @@ document.getElementById('stage').addEventListener('click', function(e){
   }
 });
 
-document.getElementById('stage').addEventListener('keydown', function(e){
-  if (e.key === 'Tab') tabDir = e.shiftKey ? -1 : 1;
-  else if (e.key === 'Enter') tabDir = 1;
-  else tabDir = 0;
+/* запоминаем, с чем вошли в поле: если значение не менялось, перерисовки нет
+   и фокус переходит сразу */
+document.getElementById('stage').addEventListener('focusin', function(e){
+  var i = e.target;
+  focusVal = (i && (i.tagName === 'INPUT' || i.tagName === 'SELECT')) ? i.value : null;
 }, true);
-document.getElementById('stage').addEventListener('mousedown', function(){ tabDir = 0; }, true);
+document.getElementById('stage').addEventListener('keydown', function(e){
+  if (e.key !== 'Tab' && e.key !== 'Enter') return;
+  var i = e.target;
+  if (!i || (i.tagName !== 'INPUT' && i.tagName !== 'SELECT')) return;
+  if (i.type === 'file' || i.tagName === 'TEXTAREA') return;
+  var dir = (e.key === 'Tab' && e.shiftKey) ? -1 : 1;
+  var down = (e.key === 'Enter');
+  var want = ksNeighbour(i, dir, down) || stageNeighbour(i, dir);
+  e.preventDefault();
+  if (i.value === focusVal){          // ничего не меняли: просто уходим дальше
+    var to = byKey(want);
+    if (to){ try { to.focus(); to.select(); } catch(err){ to.focus(); } focusVal = to.value; }
+    return;
+  }
+  editRejected = false;
+  focusWanted = want;
+  i.dispatchEvent(new Event('change', {bubbles:true}));
+  focusWanted = null; editRejected = false;
+  var now = document.activeElement;
+  focusVal = (now && (now.tagName === 'INPUT' || now.tagName === 'SELECT')) ? now.value : null;
+}, true);
 
 /* правка обязательных полей: кнопку «Дальше» гасим сразу, без перерисовки */
 document.getElementById('stage').addEventListener('input', function(e){
@@ -5195,12 +5278,12 @@ document.getElementById('stage').addEventListener('change', function(e){
   if (d.ks){
     x = num(i.value);
     var kp = d.ks.split('-'), ki = +kp[1], st = ksState();
-    if (x === null || x < 0 || x > 100){ st.bad = kp[0]; renderAll(); return; }
+    if (x === null || x < 0 || x > 100){ st.bad = kp[0]; editRejected = true; renderAll(); return; }
     /* процент месяца, а не накопление: по строке в сумме не больше 100 */
     var arr = st.done[kp[0]];
-    if (!arr){ renderStage(); return; }
+    if (!arr){ editRejected = true; renderStage(); return; }
     var was = arr[ki] || 0, sum = ksRowSum(kp[0]) - was + x;
-    if (sum > 100.05){ st.bad = kp[0]; renderAll(); return; }
+    if (sum > 100.05){ st.bad = kp[0]; editRejected = true; renderAll(); return; }
     arr[ki] = x; st.edited[d.ks] = 1; st.bad = null;
     renderAll(); return;
   }
