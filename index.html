@@ -4,7 +4,7 @@
 :root{
   --ground:#E8ECEE; --surface:#FFFFFF; --surface-2:#F3F5F7; --sunken:#F0F2F4;
   --line:#E6EAEC; --line-strong:#C9D0D5;
-  --ink:#15181B; --text:#23282C; --muted:#5F676D; --faint:#8A9299;
+  --ink:#15181B; --text:#23282C; --muted:#5F676D; --faint:#6F777E;
   --p-auto:#2E7357; --p-auto-bg:#E7F1EC; --p-auto-line:#B9D6C8;
   --p-manual:#8E6A12; --p-manual-bg:#F6EEDA; --p-manual-line:#E0CB98;
   --p-tender:#2A5F96; --p-tender-bg:#E6EEF6; --p-tender-line:#B6CDE3;
@@ -18,7 +18,7 @@
   :root:not([data-theme="light"]){
     --ground:#0C0F12; --surface:#171B1F; --surface-2:#1C2126; --sunken:#13171A;
     --line:#232A2F; --line-strong:#39424A;
-    --ink:#F2F4F5; --text:#DDE2E5; --muted:#98A1A8; --faint:#767F86;
+    --ink:#F2F4F5; --text:#DDE2E5; --muted:#98A1A8; --faint:#828B92;
     --p-auto:#63B894; --p-auto-bg:#16281F; --p-auto-line:#2C4E3D;
     --p-manual:#D9AE4B; --p-manual-bg:#2A2213; --p-manual-line:#4E4126;
     --p-tender:#74A9D8; --p-tender-bg:#152230; --p-tender-line:#2A4058;
@@ -34,7 +34,7 @@
 :root[data-theme="dark"]{
   --ground:#0C0F12; --surface:#171B1F; --surface-2:#1C2126; --sunken:#13171A;
   --line:#232A2F; --line-strong:#39424A;
-  --ink:#F2F4F5; --text:#DDE2E5; --muted:#98A1A8; --faint:#767F86;
+  --ink:#F2F4F5; --text:#DDE2E5; --muted:#98A1A8; --faint:#828B92;
   --p-auto:#63B894; --p-auto-bg:#16281F; --p-auto-line:#2C4E3D;
   --p-manual:#D9AE4B; --p-manual-bg:#2A2213; --p-manual-line:#4E4126;
   --p-tender:#74A9D8; --p-tender-bg:#152230; --p-tender-line:#2A4058;
@@ -2612,7 +2612,7 @@ function oldFormModal(){
 /* ==================================================================
    Справочник поставщиков и журнал запросов
    ================================================================== */
-var TODAY = '10.09.2026';
+var TODAY = '11.09.2026';
 
 /* ==================================================================
    «Что мешает», С2, и аналитика реестра, С1.
@@ -3998,6 +3998,169 @@ function numCells(arr, cls){
   return arr.map(function(v){ return '<td class="r num"'+(cls?' style="'+cls+'"':'')+'>'+f(v)+'</td>'; }).join('');
 }
 
+/* ==================================================================
+   Выгрузка и загрузка плана процентования. Никита будет править план ещё
+   не раз, скриншоты это временно. Формат CSV с точкой с запятой и BOM:
+   так его открывает Excel в русской локали. Браузерное хранилище не
+   используем, поэтому правки живут до перезагрузки, а файл это то, что
+   можно прислать письмом.
+   ================================================================== */
+function csvCell(v){
+  v = String(v);
+  return /[;"\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+function csvRow(arr){ return arr.map(csvCell).join(';'); }
+/* разбор строки CSV с кавычками: имена видов работ содержат точку с запятой */
+function csvSplit(line){
+  var out = [], cur = '', q = false, i, c;
+  for (i = 0; i < line.length; i++){
+    c = line.charAt(i);
+    if (q){
+      if (c === '"'){ if (line.charAt(i + 1) === '"'){ cur += '"'; i++; } else q = false; }
+      else cur += c;
+    } else if (c === '"') q = true;
+    else if (c === ';'){ out.push(cur); cur = ''; }
+    else cur += c;
+  }
+  out.push(cur);
+  return out;
+}
+function planParams(){
+  var sc = sched();
+  return [['Монтаж начинается с месяца', sc.mountStart],
+          ['Месяцев монтажа', sc.mountMonths],
+          ['Согласование итогового акта, мес', sc.actApprovalMonths || 0],
+          ['Гарантийный срок объекта, мес', sc.warrantyMonths],
+          ['Оплата бригаде, месяцев после начисления', sc.crewPayLag],
+          ['Оплата заказчиком, месяцев после КС', sc.customerPayLag],
+          ['Сдача СКС и клининг, месяцев перед финальной КС', sc.scsMonths],
+          ['Отдельный платёж после сдачи, % контракта', sc.finalKsShare],
+          ['Через сколько месяцев после последней КС', sc.finalKsLag]];
+}
+function planCsv(){
+  var st = ksState(), lines = [];
+  lines.push(csvRow(['План процентования', O.name]));
+  lines.push(csvRow(['Выгружено', TODAY]));
+  planParams().forEach(function(p){ lines.push(csvRow(p)); });
+  lines.push('');
+  lines.push(csvRow(['Код', 'Вид работ по договору', 'Доля, %'].concat(FIN.months)));
+  ksStages().forEach(function(sg){
+    var a = st.done[sg.k] || [];
+    lines.push(csvRow([sg.k, sg.n, sg.pct].concat(FIN.months.map(function(m, i){
+      return a[i] || 0;
+    }))));
+  });
+  return lines.join('\n');
+}
+function planFileName(){ return 'План процентования_' + O.name + '_' + TODAY + '.csv'; }
+function planHref(){
+  return 'data:text/csv;charset=utf-8,' + encodeURIComponent('\uFEFF' + planCsv());
+}
+/* Проверка файла до применения: объект, набор видов работ, неотрицательные
+   проценты и сумма строки не больше 100. Ошибка в любой строке отменяет
+   весь файл: половину плана применять нельзя, это хуже, чем не применить. */
+function planCheck(text){
+  var lines = String(text).replace(/^\uFEFF/, '').split(/\r?\n/);
+  var hdr = -1, i, obj = null;
+  for (i = 0; i < lines.length; i++){
+    var c = csvSplit(lines[i]);
+    if (c[0] === 'План процентования') obj = c[1];
+    if (c[0] === 'Код'){ hdr = i; break; }
+  }
+  if (hdr < 0) return {err:'в файле нет шапки таблицы: строки, которая начинается с «Код»'};
+  if (obj == null) return {err:'в файле нет строки «План процентования» с именем объекта'};
+  if (obj !== O.name)
+    return {err:'файл выгружен по объекту «' + obj + '», а открыт «' + O.name + '». План не применён.'};
+  var cols = csvSplit(lines[hdr]), months = cols.slice(3);
+  var W = ksStages(), want = W.map(function(x){ return x.k; }), got = [], rows = {};
+  for (i = hdr + 1; i < lines.length; i++){
+    if (!lines[i].trim()) continue;
+    var r = csvSplit(lines[i]);
+    got.push(r[0]);
+    rows[r[0]] = {pct:r[2], vals:r.slice(3)};
+  }
+  var miss = want.filter(function(k){ return got.indexOf(k) < 0; });
+  var extra = got.filter(function(k){ return want.indexOf(k) < 0; });
+  if (miss.length || extra.length)
+    return {err:'набор видов работ не совпал.' +
+      (miss.length ? ' Нет в файле: ' + miss.join(', ') + '.' : '') +
+      (extra.length ? ' Лишние в файле: ' + extra.join(', ') + '.' : '')};
+  /* проценты: не отрицательные, по строке не больше 100 */
+  var bad = null, lastAbs = null, firstAbs = null;
+  W.forEach(function(sg){
+    var vals = rows[sg.k].vals, sum = 0;
+    months.forEach(function(m, j){
+      var v = num(String(vals[j] == null ? 0 : vals[j]).trim() || '0');
+      if (v === null || v < 0){ if (!bad) bad = 'в строке «' + sg.n + '», месяц ' + m + ': «' + vals[j] + '»'; return; }
+      sum += v;
+      if (v > 0){
+        var ab = labelAbs(m);
+        if (ab != null){
+          if (lastAbs == null || ab > lastAbs) lastAbs = ab;
+          if (firstAbs == null || ab < firstAbs) firstAbs = ab;
+        }
+      }
+    });
+    if (!bad && sum > 100.05)
+      bad = 'по строке «' + sg.n + '» вышло ' + pcs(Math.round(sum * 10) / 10) + ', это больше 100 %';
+  });
+  if (bad) return {err:bad + '. Файл не применён целиком.', row:bad};
+  if (firstAbs != null && firstAbs < labelAbs(FIN.months[0]))
+    return {err:'в файле есть процент в месяце левее горизонта плана (' + FIN.months[0] + ')'};
+  return {ok:true, months:months, rows:rows, lastAbs:lastAbs};
+}
+function planApply(text){
+  var res = planCheck(text);
+  if (!res.ok) return res;
+  /* месяц правее горизонта расширяет горизонт, как ручная ячейка */
+  var right = labelAbs(FIN.months[FIN.months.length - 1]);
+  if (res.lastAbs != null && res.lastAbs > right){
+    FIN.plusMonths = (FIN.plusMonths || 0) + (res.lastAbs - right);
+    buildMonths();
+  }
+  var st = ksState();
+  ksStages().forEach(function(sg, si){
+    var src = res.rows[sg.k], arr = st.done[sg.k], j;
+    for (j = 0; j < arr.length; j++) arr[j] = 0;
+    var pct = num(String(src.pct).trim());
+    if (pct !== null && pct !== sg.pct){ sg.pct = pct; sg.edited = 1; sg.note = sg.note || 'из файла плана'; }
+    res.months.forEach(function(m, k){
+      var v = num(String(src.vals[k] == null ? 0 : src.vals[k]).trim() || '0') || 0;
+      var i2 = FIN.months.indexOf(m);
+      if (i2 >= 0){ arr[i2] = v; if (v > 0) st.edited[sg.k + '-' + i2] = 1; }
+    });
+  });
+  st.bad = null;
+  return {ok:true};
+}
+var planFileText = '';
+function planUpModal(){
+  planFileText = '';
+  openModal(
+    '<div class="modal-head"><div><h2>Загрузить план процентования</h2>'+
+      '<div class="modal-sub">тот же CSV, что отдаёт «Скачать план»</div></div>'+
+      '<button class="x" data-close aria-label="Закрыть">✕</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="field-lbl">Файл CSV</div>'+
+      '<input type="file" id="planFile" accept=".csv,text/csv" aria-label="Файл плана">'+
+      '<div class="field-lbl" style="margin-top:12px">Или вставьте текст файла</div>'+
+      '<textarea id="planPaste" class="wide" rows="6" aria-label="Текст плана"></textarea>'+
+      '<div class="note" id="planMsg">Объект и набор видов работ должны совпасть с открытым объектом. '+
+      'Проценты не отрицательные, по строке не больше 100. Если что-то не сошлось, файл не применяется целиком.</div>'+
+    '</div>'+
+    '<div class="modal-foot"><span class="right">'+
+      '<button class="btn" data-close>Отмена</button>'+
+      '<button class="btn btn-primary" data-plan-apply>Применить</button></span></div>');
+  var f = document.getElementById('planFile');
+  f.addEventListener('change', function(){
+    var file = f.files && f.files[0];
+    if (!file) return;
+    var rd = new FileReader();
+    rd.onload = function(){ planFileText = String(rd.result || ''); };
+    rd.readAsText(file, 'utf-8');
+  });
+}
+
 /* блок «Выполнение по КС»: проценты по этапам, выручка, удержание,
    начисления и выплаты монтажникам (документ 22, вопрос 3) */
 function ksPanel(){
@@ -4102,7 +4265,12 @@ function ksPanel(){
     '<div class="ks-tools"><span class="field-note">В ячейке процент, который закрывается '+
       '<b>в этом месяце</b>. Нарастающий итог показан серым под ячейкой.'+
       (O.ksPlan ? ' Охряные ячейки: '+O.ksPlan.src+'.' : '')+'</span>'+
-      '<button class="btn btn-sm" data-ks-plus>+ месяц</button></div>'+
+      '<span style="display:flex;gap:8px;align-items:center">'+
+      '<a class="btn btn-sm" data-plan-dl download="'+planFileName()+'" href="'+planHref()+'">Скачать план</a>'+
+      '<button class="btn btn-sm" data-plan-up>Загрузить план</button>'+
+      '<button class="btn btn-sm" data-ks-plus>+ месяц</button></span></div>'+
+    '<div class="note">Правки сбрасываются при перезагрузке: браузерного хранилища у прототипа нет. '+
+    'Заполнили план: нажмите «Скачать план» и пришлите файл.</div>'+
 
     '<div class="tw months"><table><thead><tr><th>Вид работ по договору</th>'+monthCols()+'<th class="r">Всего, ₽</th></tr></thead>'+
     '<tbody>'+srows+
@@ -4858,6 +5026,7 @@ document.getElementById('stage').addEventListener('click', function(e){
     holdTerms().splice(+t.dataset.holdDel, 1);
     renderAll(); return;
   }
+  if (e.target.closest('[data-plan-up]')){ planUpModal(); return; }
   if (e.target.closest('[data-ks-plus]')){
     FIN.plusMonths = (FIN.plusMonths || 0) + 1;
     buildMonths(); renderAll(); return;
@@ -5122,6 +5291,14 @@ document.getElementById('overlay').addEventListener('click', function(e){
   if (e.target.id === 'overlay'){ closeModal(); return; }
   var t;
   if (e.target.closest('[data-ks-auto-ok]')){ closeModal(); ksReset(); renderAll(); return; }
+  if (e.target.closest('[data-plan-apply]')){
+    var pt = (document.getElementById('planPaste').value || '').trim() || planFileText;
+    var pm = document.getElementById('planMsg');
+    if (!String(pt).trim()){ pm.innerHTML = 'Ни файла, ни текста: выберите файл или вставьте его содержимое.'; return; }
+    var pr = planApply(pt);
+    if (!pr.ok){ pm.innerHTML = '<b>Файл не применён.</b> ' + pr.err; return; }
+    closeModal(); renderAll(); return;
+  }
   if (e.target.closest('[data-close]')){ closeModal(); return; }
   if ((t = e.target.closest('[data-cons]'))){ consModal(t.dataset.cons); return; }
   if ((t = e.target.closest('[data-dict-pick]'))){
