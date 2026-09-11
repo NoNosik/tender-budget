@@ -728,16 +728,16 @@ function mountStageWeights(){
    до конца гарантийного срока. */
 var CUSTOMERS = {
   'СЭТЛ СТРОЙ|витражи':{hold:[
-    {pct:6, base:'total', release:'reserve', inDir:false,
-     src:'договор 150626ВХ, п. 5.1.2, сумма резервирования'},
-    {pct:1, base:'total', release:'warranty', relAfter:66, inDir:true,
-     src:'ДИР!E172 = 1 %, гарантийная сумма; ДИР!D172 = 395 046,23'}
+    {pct:6, base:'smr', release:'final_act', inDir:false,
+     src:'Никита 10.09: по КС-2 от суммы СМР, 789 185; п. 5.1.2, сумма резервирования'},
+    {pct:1, base:'smr', release:'warranty', relAfter:66, inDir:true,
+     src:'Никита 10.09: по КС-2 от суммы СМР; ДИР!E172 = 1 %, гарантийная сумма'}
   ]},
   'СЭТЛ СТРОЙ|фасады':{hold:[
-    {pct:9, base:'total', release:'reserve', inDir:false,
-     src:'фасадный договор Сэтла, сумма резервирования'},
+    {pct:9, base:'total', release:'final_act', inDir:false,
+     src:'фасадный договор Сэтла, сумма резервирования; для витражей база подтверждена от СМР, по фасадам не спрашивали, Р13'},
     {pct:1, base:'total', release:'warranty', relAfter:66, inDir:true,
-     src:'фасадный договор Сэтла, гарантийная сумма'}
+     src:'фасадный договор Сэтла, гарантийная сумма; база не подтверждена, Р13'}
   ]},
   'default':{hold:[
     {pct:5, base:'total', release:'warranty', relAfter:12, inDir:true,
@@ -745,7 +745,8 @@ var CUSTOMERS = {
   ]}
 };
 var HOLD_BASE = {total:'вся цена контракта (КС-3)', smr:'СМР-часть контракта', materials:'материалы контракта'};
-var HOLD_REL  = {after_ks:'сразу после КС', reserve:'резервирование, п. 5.1.2',
+var HOLD_REL  = {after_ks:'сразу после КС', final_act:'после итогового акта',
+                 reserve:'резервирование, п. 5.1.2',
                  after_handover:'после сдачи объекта', warranty:'до конца гарантии',
                  never:'не возвращается'};
 function holdKey(){
@@ -762,6 +763,22 @@ function holdTerms(){
 }
 function holdIrrevocablePct(){
   return holdTerms().reduce(function(a,h){ return a + (h.inDir ? h.pct : 0); }, 0);
+}
+/* доля цены контракта, на которую опирается база строки удержания */
+function holdBaseFrac(base){
+  if (base === 'smr') return smrShare();
+  if (base === 'materials') return 1 - smrShare();
+  return 1;
+}
+/* Невозвратное удержание в долях цены контракта. Раньше в итоге шага стояло
+   поле объекта O.hold (1 % от всей цены, как ДИР!D172 = 395 046,23), теперь
+   оно берётся из справочника заказчика: у витражей Сэтла 1 % от СМР-части,
+   это 112 741 (Никита 10.09). Список строк любой длины: у договоров бывает
+   и три части (Виктор 11.09). */
+function holdIrrevocableFrac(){
+  return holdTerms().reduce(function(a,h){
+    return a + (h.inDir ? h.pct / 100 * holdBaseFrac(h.base) : 0);
+  }, 0);
 }
 /* сроки объекта: месяцы монтажа, гарантия, задержка выплат бригаде */
 function sched(){ return O.schedule; }
@@ -828,7 +845,7 @@ function calcOn(M, V, m){
   var ovh = OVH * (K - M.gen - genK - M.adm);
   var vatIn = M.vatDyn ? (M.vatBase + genK) * V / (1 + V) + ovh / (1 + V) * 0.016 : M.vatIn;
   var vatOut = K * V / (1 + V) - vatIn;
-  var hold = HOLD * K;
+  var hold = K * holdIrrevocableFrac();
   var margin = income - ovh - vatOut;
   var profit = margin * (1 - PROFIT_TAX);
   lastK = K;
@@ -1025,7 +1042,7 @@ OBJ.dogma = {
      заказчик платит через месяц после КС (ДДС!G14 = ДИР!F14), бригаде деньги
      уходят через два месяца после начисления (ДДС!I134 = ДИР!G134). */
   schedule:{mountStart:2, mountMonths:6, warrantyMonths:12,
-            customerPayLag:1, crewPayLag:1, scsMonths:4,
+            customerPayLag:1, crewPayLag:1, scsMonths:4, actApprovalMonths:3,
             finalKsShare:0, finalKsLag:0, lead:2, tail:2, cond:1},
   ksStagesSrc:'договор 150626ВХ, п. 2.1.25–2.1.31, секция 4; остальные секции считаем такими же, уточняется',
   /* договора на Догму нет, берём разбивку Сэтла как дефолт справочника */
@@ -1267,7 +1284,7 @@ OBJ.univer = {
   }},
   /* сроки и лаги объекта, лаги из ДДС Сената (документ 24, раздел 3) */
   schedule:{mountStart:2, mountMonths:6, warrantyMonths:12,
-            customerPayLag:1, crewPayLag:1, scsMonths:4,
+            customerPayLag:1, crewPayLag:1, scsMonths:4, actApprovalMonths:3,
             finalKsShare:0, finalKsLag:0, lead:2, tail:2, cond:1},
   /* шаг 6: статьи, свод ДИР!D143:D161 */
   ARTICLES:[
@@ -2356,7 +2373,9 @@ views_7 = function(){
     ['Маржа', r.margin, true],
     ['Налог на прибыль 25 %', -(r.margin - r.profit), false],
     ['Чистая прибыль', r.profit, true],
-    ['Удержание невозвратное, '+pcs(holdIrrevocablePct())+' (в ДИР)', -r.hold, false],
+    ['Удержание невозвратное, '+pcs(holdIrrevocablePct())+' от '+
+      HOLD_BASE[(holdTerms().filter(function(h){ return h.inDir; })[0] || {base:'total'}).base]+' (в ДИР)',
+      -r.hold, false],
     ['Живые деньги на конец стройки', r.cf, true]
   ].map(function(d){
     return '<tr'+(d[2]?' style="font-weight:600"':'')+'><td'+(d[2]?'':' style="color:var(--muted);padding-left:22px"')+'>'+d[0]+'</td>'+
@@ -2380,7 +2399,7 @@ views_7 = function(){
     'Ставка НДС берётся из параметра расчёта, поэтому смена 22 на 13 расчёт не сломает.</div>');
 
   var holdNote = '<div class="note">Удержание по договору состоит из двух частей. В итоге участвует только '+
-    '<b>невозвратная</b>: '+pcs(holdIrrevocablePct())+' × цена контракта = '+f(r.hold)+' ₽. '+
+    '<b>невозвратная</b>: '+pcs(holdIrrevocablePct())+' от базы своей строки = '+f(r.hold)+' ₽. '+
     '<span style="color:var(--muted)">Возвратная часть '+f(hfb.backSum)+' ₽ живёт только в движении денег '+
     'и возвращается по условиям договора, её видно на шаге '+STEP.fin+'.</span> '+
     'Условия задаются там же списком строк, а не одним полем.</div>';
@@ -2617,10 +2636,15 @@ var ISSUES = [
   {n:'В7', from:'08.09.2026', who:'Андрей', norm:'dict', steps:[2], objs:['dogma','univer'],
    txt:'Какие системы и артикулы к какой из трёх колонок скидок (ВС-36/ФС-50/SL, Aurora, РосПроф + ENSAVE AVA)'},
   {n:'В8', from:'', who:'Андрей', norm:'dict', steps:[1], objs:['dogma'], cond:true, txt:''},
-  {n:'Р1', from:'10.09.2026', who:'Сергей', norm:'rp', steps:[8], objs:['univer'],
-   txt:'Текст п. 5.1.2 договора с Сэтлом: когда возвращается сумма резервирования (6 % по витражам, 9 % по фасадам)'},
-  {n:'Р9', from:'10.09.2026', who:'Сергей и Никита', norm:'rp', steps:[8], objs:['univer'],
-   txt:'База удержания: вся сумма КС-3 (ДИР Андрея, договор) или СМР-часть по КС-2 (Никита)'},
+  /* Р1 закрыт 11.09: Никита сказал, что 6 % платят после подписания итогового
+     акта, срок согласования 2–3 месяца. Р9 закрыт 10.09: база это сумма СМР
+     по КС-2, 789 185 по Универу сходятся до рубля. */
+  {n:'Р11', from:'11.09.2026', who:'Павел', norm:'rp', steps:[8], objs:['dogma','univer'],
+   txt:'Квартальные налоги: платите раз в квартал или иначе, Никита не знает, бухгалтерия через Павла'},
+  {n:'Р12', from:'11.09.2026', who:'Никита, затем Андрей', norm:'rp', steps:[8], objs:['univer'],
+   txt:'В ДИР Универа удержание 1 % от всей цены (D172 = 395 046,23), а по договору от СМР: откуда расхождение'},
+  {n:'Р13', from:'11.09.2026', who:'Сергей и Никита', norm:'rp', steps:[8], objs:['univer'],
+   txt:'База удержания по фасадным договорам Сэтла: от СМР, как по витражам, или от всей цены'},
   {n:'Р10', from:'10.09.2026', who:'Сергей', norm:'rp', steps:[8], objs:['univer'],
    txt:'Разбивка по видам работ одинакова для всех семи секций Универа или отличается'}
 ];
@@ -3275,6 +3299,12 @@ function leadPad(){
    самый правый ручной процент с хвостом и декабрь следующего календарного
    года от старта монтажа. Никите 11.09 не хватило двух месяцев, чтобы
    дописать план, поэтому до конца следующего года горизонт есть всегда. */
+/* правый хвост: два месяца платежей плюс, если он длиннее, срок согласования
+   итогового акта с лагом оплаты, иначе возврат 6 % уедет за горизонт */
+function tailPad(){
+  var sc = O.schedule;
+  return Math.max(sc.tail || 0, (sc.actApprovalMonths || 0) + (sc.customerPayLag || 0));
+}
 function horizonLen(base, lead, tail){
   var sc = O.schedule, b0 = labelAbs(base[0]);
   var need = lead + base.length + tail;
@@ -3291,7 +3321,7 @@ function horizonLen(base, lead, tail){
 }
 function buildMonths(){
   var sc = O.schedule, base = FIN.baseMonths || (FIN.baseMonths = FIN.months.slice());
-  var tail = sc.tail || 0, out = [], i;
+  var tail = tailPad(), out = [], i;
   var lead = leadPad();
   /* горизонт не сужается: ручная ячейка в дальнем месяце не должна пропасть */
   var n = Math.max(horizonLen(base, lead, tail), FIN.months.length);
@@ -3521,6 +3551,32 @@ function shiftPct(src, k){
   return a;
 }
 
+/* ---- итоговый акт ---------------------------------------------------
+   Никита 10.09: сдача СКС идёт в накопительной, когда процентуем полностью,
+   подгружаем итоговый акт, срок его согласования и подписания 2–3 месяца,
+   после выплата 6 %. Значит месяц акта это месяц, в котором выполнение по
+   всем видам работ дошло до 100 %, плюс согласование. */
+function planFullMonth(){
+  var n = nMonths(), st = ksState(), W = ksStages(), last = -1, s, i;
+  for (s = 0; s < W.length; s++){
+    var a = st.done[W[s].k] || [], acc = 0, hit = -1;
+    for (i = 0; i < n; i++){ acc += (a[i] || 0); if (acc >= 99.95){ hit = i; break; } }
+    if (hit < 0) return null;          // строка не закрыта, итогового акта нет
+    if (hit > last) last = hit;
+  }
+  return last < 0 ? null : last;
+}
+function finalActMonth(){
+  var m = planFullMonth();
+  return m == null ? null : m + (sched().actApprovalMonths || 0);
+}
+/* месяц, в котором приходят 6 %: акт плюс обычный лаг заказчика. Никита
+   говорит «в течение 2 недель после подписания», сетка плана месячная. */
+function reserveBackMonth(){
+  var m = finalActMonth();
+  return m == null ? null : m + sched().customerPayLag;
+}
+
 /* ---- удержание по условиям договора ------------------------------- */
 function holdBaseVal(h, rev, i){
   if (h.base === 'smr') return rev.smr[i];
@@ -3537,9 +3593,10 @@ function holdFlow(){
       var v = holdBaseVal(h, rev, i) * h.pct / 100;
       arr.push(v); sum += v; held[i] += v;
     }
-    var fin = finalKsMonth();
+    var fin = finalKsMonth(), act = reserveBackMonth();
     var rel = h.release === 'after_ks' ? 'ks'
-            : h.release === 'reserve' ? (h.relMonth != null ? h.relMonth - 1 : fin + 1)
+            : (h.release === 'final_act' || h.release === 'reserve')
+              ? (h.relMonth != null ? h.relMonth - 1 : act)
             : h.release === 'after_handover' ? w.handover
             : h.release === 'warranty' ? fin + (h.relAfter || sc.warrantyMonths)
             : null;
@@ -4022,6 +4079,14 @@ function ksPanel(){
       '<input type="text" class="'+(sc.cond?'':'auto-in')+'" data-sched="mountMonths" value="'+sc.mountMonths+'" aria-label="Месяцев монтажа">'+
       '<div class="field-note">для автораскладки; фактические сроки задаёт таблица ниже · сдача '+
       FIN.months[wnd.handover]+'</div></div>'+
+    '<div><div class="field-lbl">Согласование итогового акта, мес</div>'+
+      '<input type="text" class="auto-in" data-sched="actApprovalMonths" value="'+
+      (sc.actApprovalMonths||0)+'" aria-label="Согласование итогового акта, мес">'+
+      '<div class="field-note">Никита 10.09: 2–3 месяца, берём верхнюю границу'+
+      (planFullMonth() == null
+        ? ' · '+condMark('план не доходит до 100 %, итогового акта нет')
+        : ' · 100 % в '+FIN.months[planFullMonth()]+', акт '+
+          (finalActMonth() < nMonths() ? FIN.months[finalActMonth()] : 'за горизонтом'))+'</div></div>'+
     '<div><div class="field-lbl">Гарантийный срок объекта, мес</div>'+
       '<input type="text" class="'+(sc.cond?'':'auto-in')+'" data-sched="warrantyMonths" value="'+sc.warrantyMonths+'" aria-label="Гарантийный срок объекта, мес">'+
       '<div class="field-note">от месяца сдачи; по нему раскладывается гарантийное обслуживание</div></div>'+
@@ -4089,7 +4154,7 @@ function ksPanel(){
 
 /* условия удержания: список строк договора */
 function holdPanel(readOnly){
-  var hf = holdFlow(), r = calc(state.m);
+  var hf = holdFlow(), r = calc(state.m), rbm = reserveBackMonth();
   var rows = holdTerms().map(function(h, i){
     var t = hf.terms[i];
     return '<tr><td class="r">'+(readOnly
@@ -4109,17 +4174,27 @@ function holdPanel(readOnly){
         '<div class="field-note">'+(h.base === 'total'
           ? 'если от СМР по КС-2: '+f(hf.rev.smrTot * h.pct / 100)+' ₽'
           : 'если от всей цены: '+f(hf.rev.K * h.pct / 100)+' ₽')+'</div>'+
-        '<div class="field-note">'+cond('Никита 10.09: возможно, от СМР по КС-2','вопрос Р9, база не подтверждена')+'</div></td>'+
+        (h.inDir
+          ? '<div class="field-note">'+cond('в ДИР Андрея 395 046 (от всей цены)',
+              'по договору от СМР, Никита 10.09; почему в ДИР иначе, уточняется, Р12')+'</div>'
+          : '')+'</td>'+
       '<td>'+(t.returned ? 'возвращается '+(t.rel==='ks'?'сразу':FIN.months[t.rel]) : 'за горизонтом плана')+
-        (h.release === 'reserve'
-          ? '<div class="field"><input type="text" class="'+(h.relMonth?'':'auto-in')+'" data-hold="'+i+
-            '|relMonth" value="'+(h.relMonth || (finalKsMonth()+2))+'" aria-label="Месяц возврата">'+
-            '<span class="sum-unit">мес</span></div>'+
-            '<div class="field-note">'+cond('месяц после финальной КС','пункт 5.1.2 договора не прислали, Р1')+'</div>'
+        (h.release === 'final_act' || h.release === 'reserve'
+          ? (rbm == null
+              ? '<div class="field-note" style="color:var(--p-missing)">итоговый акт не наступает: '+
+                'план закрыт на '+pcs(ksPlanDone())+'</div>'
+              : '<div class="field"><input type="text" class="'+(h.relMonth?'':'auto-in')+'" data-hold="'+i+
+                '|relMonth" value="'+(h.relMonth || (rbm + 1))+'" aria-label="Месяц возврата">'+
+                '<span class="sum-unit">мес</span></div>'+
+                '<div class="field-note">100 % в '+FIN.months[planFullMonth()]+', согласование '+
+                (sched().actApprovalMonths||0)+' мес, оплата через '+sched().customerPayLag+'</div>')
           : (h.release === 'warranty'
-              ? '<div class="field-note">Срок возврата гарантийной суммы '+(h.relAfter || sched().warrantyMonths)+' мес после финальной КС</div>'
+              ? '<div class="field-note">Срок возврата гарантийной суммы '+(h.relAfter || sched().warrantyMonths)+
+                ' мес после финальной КС · Никита 10.09: 5,5 года с ввода объекта в эксплуатацию; '+
+                'дату ввода не знаем, считаем от последней КС</div>'
               : ''))+'</td>'+
-      '<td>'+(h.inDir ? '<span class="pill p-auto">в ДИР</span>' : '<span class="pill p-tender">только движение денег</span>')+'</td>'+
+      '<td>'+(h.inDir ? '<span class="pill p-auto">в ДИР</span>' : '<span class="pill p-tender">только движение денег</span>')+
+        '<div><button class="btn btn-sm" data-hold-del="'+i+'" aria-label="Убрать строку удержания">убрать</button></div></td>'+
       '<td class="mono" style="font-size:11px;color:var(--muted)">'+h.src+'</td></tr>';
   }).join('');
   return panel('Удержание по договору', 'заказчик «'+state.form.customer+'»',
@@ -4130,15 +4205,19 @@ function holdPanel(readOnly){
     '<td colspan="3">возвращено '+f(hf.backSum)+' ₽, невозвратное '+f(hf.irrevocable)+' ₽</td></tr></tfoot>'+
     '</table></div>'+
     '<div class="note">В итоге шага '+STEP.budget+' участвует только невозвратная часть, она же <b>HOLD</b> объекта: '+
-    pcs(holdIrrevocablePct())+' × цена контракта = '+f(r.hold)+' ₽. Возвратная часть живёт только в движении денег. '+
-    'Связка временная, пока не отвечен Р1: в ДИР Универа стоит 1 %, а в договоре 6 + 1.</div>'+
-    '<div class="note">База удержания правится в строке. Дефолт «вся цена контракта», как в ДИР Андрея '+
-    '(ДИР!D172 = 395 046,23 = 1 % от цены). Никита 10.09 говорит, что гарантийные, возможно, считаются от СМР '+
-    'по КС-2, где у каждой позиции видно материалы и монтаж отдельно. Обе суммы показаны в строке, '+
-    'выбор за РП: <b>вопрос Р9</b>. СМР-часть '+(smrExact()
+    pcs(holdIrrevocablePct())+' от базы своей строки = '+f(r.hold)+' ₽. Возвратная часть живёт только '+
+    'в движении денег.</div>'+
+    '<div class="note">База удержания правится в строке. По витражам Сэтла дефолт «СМР-часть контракта»: '+
+    'Никита 10.09 говорит, что по КС-2 считаем только от суммы СМР, и по Универу корпус 9 это 789 185 ₽, '+
+    'из них 6 % резерв 676 444 ₽ и 1 % гарантийные 112 740 ₽. Расчёт прототипа сходится с этими числами '+
+    'до рубля. По фасадным договорам базу не спрашивали, там осталась вся цена: <b>вопрос Р13</b>. '+
+    'СМР-часть '+(smrExact()
       ? 'берётся из колонки «СМР» оферты (Расценки НС9!N)'
       : 'выведена как монтаж, изготовление и проектирование в цене контракта')+
-    ', сейчас это '+f(hf.rev.smrTot)+' ₽ из '+f(hf.rev.K)+' ₽.</div>', true);
+    ', сейчас это '+f(hf.rev.smrTot)+' ₽ из '+f(hf.rev.K)+' ₽.</div>'+
+    '<div class="note">Строк удержания может быть сколько угодно: Виктор 11.09 говорит, что типовидов '+
+    'около сорока, от СМР и от суммы договора, одной, двумя и тремя частями. '+
+    '<button class="btn btn-sm" data-hold-add>Добавить строку удержания</button></div>', true);
 }
 
 views_8 = function(){
@@ -4215,6 +4294,10 @@ views_8 = function(){
     (ksPlanDone() < 99.95
       ? '<div><span class="k">Не запроцентовано: план закрыт на ' + pcs(ksPlanDone()) + '</span>' +
         '<span class="v" style="color:var(--p-missing)">' + f(F.K * (100 - ksPlanDone()) / 100) + ' ₽</span></div>'
+      : '') +
+    (planFullMonth() == null
+      ? '<div><span class="k">Итоговый акт не наступает: план закрыт на ' + pcs(ksPlanDone()) + '</span>' +
+        '<span class="v" style="color:var(--p-missing)">6 % не возвращается</span></div>'
       : '') +
     '<div><span class="k">Удержано с КС за горизонт плана</span><span class="v">' + f(F.hold.heldSum) + ' ₽</span></div>' +
     '<div><span class="k">Из них возвращено в плане</span><span class="v">' + f(F.hold.backSum) + ' ₽</span></div>' +
@@ -4766,6 +4849,15 @@ document.getElementById('stage').addEventListener('click', function(e){
     renderStage(); return;
   }
   if (e.target.closest('[data-ks-mirror]')){ ksState().pay = {}; renderAll(); return; }
+  if ((t = e.target.closest('[data-hold-add]'))){
+    holdTerms().push({pct:1, base:'smr', release:'warranty', relAfter:66, inDir:false,
+                      src:'заведена руками '+TODAY+', источник запишите здесь', note:'', edited:1});
+    renderAll(); return;
+  }
+  if ((t = e.target.closest('[data-hold-del]'))){
+    holdTerms().splice(+t.dataset.holdDel, 1);
+    renderAll(); return;
+  }
   if (e.target.closest('[data-ks-plus]')){
     FIN.plusMonths = (FIN.plusMonths || 0) + 1;
     buildMonths(); renderAll(); return;
